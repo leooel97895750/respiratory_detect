@@ -1,5 +1,5 @@
-clear;
-close all;
+
+close all
 
 InputDir = 'C:\Users\leooel97895750\Desktop\respiratory_detect\2022data\';
 %OutputDir = 'C:\Users\leooel97895750\Desktop\respiratory_detect\2022data\';
@@ -194,32 +194,32 @@ for i = 1 : filesNumber
 
     for j = 1:height(aasm2013)
         if string(aasm2013(j, 1).Var1) == "OA"
-            aasm2013_event(1, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+            aasm2013_event(1, aasm2013(j, 2).Var2 : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3) = 1;
         elseif string(aasm2013(j, 1).Var1) == "CA"
-            aasm2013_event(2, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+            aasm2013_event(2, aasm2013(j, 2).Var2 : aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3) = 1;
         elseif string(aasm2013(j, 1).Var1) == "MA"
-            aasm2013_event(3, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+            aasm2013_event(3, aasm2013(j, 2).Var2 : aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3) = 1;
         elseif string(aasm2013(j, 1).Var1) == "OH"
-            aasm2013_event(4, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+            aasm2013_event(4, aasm2013(j, 2).Var2 : aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3) = 1;
         elseif string(aasm2013(j, 1).Var1) == "CH"
-            aasm2013_event(5, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+            aasm2013_event(5, aasm2013(j, 2).Var2 : aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3) = 1;
         elseif string(aasm2013(j, 1).Var1) == "MH"
-            aasm2013_event(6, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+            aasm2013_event(6, aasm2013(j, 2).Var2 : aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3) = 1;
         end
     end
     for j = 1:height(aasm2020)
         if string(aasm2020(j, 1).Var1) == "OA"
-            aasm2020_event(1, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+            aasm2020_event(1, aasm2020(j, 2).Var2 : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         elseif string(aasm2020(j, 1).Var1) == "CA"
-            aasm2020_event(2, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+            aasm2020_event(2, aasm2020(j, 2).Var2 : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         elseif string(aasm2020(j, 1).Var1) == "MA"
-            aasm2020_event(3, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+            aasm2020_event(3, aasm2020(j, 2).Var2 : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         elseif string(aasm2020(j, 1).Var1) == "OH"
-            aasm2020_event(4, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+            aasm2020_event(4, aasm2020(j, 2).Var2 : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         elseif string(aasm2020(j, 1).Var1) == "CH"
-            aasm2020_event(5, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+            aasm2020_event(5, aasm2020(j, 2).Var2 : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         elseif string(aasm2020(j, 1).Var1) == "MH"
-            aasm2020_event(6, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+            aasm2020_event(6, aasm2020(j, 2).Var2 : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         end
     end
 
@@ -227,61 +227,30 @@ for i = 1 : filesNumber
     plot(second_matrix(1, :)); hold on; grid on;
     plot(downsample(npress, 25));
     OA2013_bar = bar(aasm2013_event(1, :)*-1, 'FaceColor', 'r', 'BarWidth', 1);
-    set(OA2013_bar, 'FaceAlpha', 0.2);
+    set(OA2013_bar, 'FaceAlpha', 0.4);
     CA2013_bar = bar(aasm2013_event(2, :)*-1, 'FaceColor', 'g', 'BarWidth', 1);
-    set(CA2013_bar, 'FaceAlpha', 0.2);
+    set(CA2013_bar, 'FaceAlpha', 0.4);
     MA2013_bar = bar(aasm2013_event(3, :)*-1, 'FaceColor', 'm', 'BarWidth', 1);
-    set(MA2013_bar, 'FaceAlpha', 0.2);
+    set(MA2013_bar, 'FaceAlpha', 0.4);
     OH2013_bar = bar(aasm2013_event(4, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OH2013_bar, 'FaceAlpha', 0.2);
-    CH2013_bar = bar(aasm2013_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
-    set(CH2013_bar, 'FaceAlpha', 0.2);
+    set(OH2013_bar, 'FaceAlpha', 0.4);
+    %CH2013_bar = bar(aasm2013_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
+    %set(CH2013_bar, 'FaceAlpha', 0.4);
     MH2013_bar = bar(aasm2013_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
-    set(MH2013_bar, 'FaceAlpha', 0.2);
+    set(MH2013_bar, 'FaceAlpha', 0.4);
 
-    OA2020_bar = bar(aasm2020_event(1, :)*-2, 'FaceColor', 'r', 'BarWidth', 1);
-    set(OA2020_bar, 'FaceAlpha', 0.2);
-    CA2020_bar = bar(aasm2020_event(2, :)*-2, 'FaceColor', 'g', 'BarWidth', 1);
-    set(CA2020_bar, 'FaceAlpha', 0.2);
-    MA2020_bar = bar(aasm2020_event(3, :)*-2, 'FaceColor', 'm', 'BarWidth', 1);
-    set(MA2020_bar, 'FaceAlpha', 0.2);
-    OH2020_bar = bar(aasm2020_event(4, :)*-2, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OH2020_bar, 'FaceAlpha', 0.2);
-    CH2020_bar = bar(aasm2020_event(5, :)*-2, 'FaceColor', 'c', 'BarWidth', 1);
-    set(CH2020_bar, 'FaceAlpha', 0.2);
-    MH2020_bar = bar(aasm2020_event(6, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
-    set(MH2020_bar, 'FaceAlpha', 0.2);
-    title("NPress Event");
-
-    figure(14);
-    plot(second_matrix(2, :)); hold on; grid on;
-    plot(downsample(therm, 25));
-    OA2013_bar = bar(aasm2013_event(1, :)*-1, 'FaceColor', 'r', 'BarWidth', 1);
-    set(OA2013_bar, 'FaceAlpha', 0.2);
-    CA2013_bar = bar(aasm2013_event(2, :)*-1, 'FaceColor', 'g', 'BarWidth', 1);
-    set(CA2013_bar, 'FaceAlpha', 0.2);
-    MA2013_bar = bar(aasm2013_event(3, :)*-1, 'FaceColor', 'm', 'BarWidth', 1);
-    set(MA2013_bar, 'FaceAlpha', 0.2);
-    OH2013_bar = bar(aasm2013_event(4, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OH2013_bar, 'FaceAlpha', 0.2);
-    CH2013_bar = bar(aasm2013_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
-    set(CH2013_bar, 'FaceAlpha', 0.2);
-    MH2013_bar = bar(aasm2013_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
-    set(MH2013_bar, 'FaceAlpha', 0.2);
-
-    OA2020_bar = bar(aasm2020_event(1, :)*-2, 'FaceColor', 'r', 'BarWidth', 1);
-    set(OA2020_bar, 'FaceAlpha', 0.2);
-    CA2020_bar = bar(aasm2020_event(2, :)*-2, 'FaceColor', 'g', 'BarWidth', 1);
-    set(CA2020_bar, 'FaceAlpha', 0.2);
-    MA2020_bar = bar(aasm2020_event(3, :)*-2, 'FaceColor', 'm', 'BarWidth', 1);
-    set(MA2020_bar, 'FaceAlpha', 0.2);
-    OH2020_bar = bar(aasm2020_event(4, :)*-2, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OH2020_bar, 'FaceAlpha', 0.2);
-    CH2020_bar = bar(aasm2020_event(5, :)*-2, 'FaceColor', 'c', 'BarWidth', 1);
-    set(CH2020_bar, 'FaceAlpha', 0.2);
-    MH2020_bar = bar(aasm2020_event(6, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
-    set(MH2020_bar, 'FaceAlpha', 0.2);
-    title("Threm Event");
+    OA2020_bar = bar((aasm2020_event(1, :)*-1)-1, 'FaceColor', 'r', 'BarWidth', 1);
+    set(OA2020_bar, 'FaceAlpha', 0.4);
+    CA2020_bar = bar((aasm2020_event(2, :)*-1)-1, 'FaceColor', 'g', 'BarWidth', 1);
+    set(CA2020_bar, 'FaceAlpha', 0.4);
+    MA2020_bar = bar((aasm2020_event(3, :)*-1)-1, 'FaceColor', 'm', 'BarWidth', 1);
+    set(MA2020_bar, 'FaceAlpha', 0.4);
+    OH2020_bar = bar((aasm2020_event(4, :)*-1)-1, 'FaceColor', 'b', 'BarWidth', 1);
+    set(OH2020_bar, 'FaceAlpha', 0.4);
+    CH2020_bar = bar((aasm2020_event(5, :)*-1)-1, 'FaceColor', 'c', 'BarWidth', 1);
+    set(CH2020_bar, 'FaceAlpha', 0.4);
+    MH2020_bar = bar((aasm2020_event(6, :)*-1)-1, 'FaceColor', 'k', 'BarWidth', 1);
+    set(MH2020_bar, 'FaceAlpha', 0.4);
     
 
     
