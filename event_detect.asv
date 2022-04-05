@@ -225,21 +225,20 @@ for i = 1 : filesNumber
 
     %% 偵測演算法
 
-    % artifact、Apnea、Hypopnea、Desat
+    % Apnea_artifact、Apnea_type、Hypopnea_artifact、Hypopnea_type、Desat
     detect_matrix = zeros(4, epoch*30);
 
-    % Apnea (therm下降90%且大於10秒)
+    %% Apnea (therm下降90%且大於10秒)
     s_therm = second_matrix(2, :);
     figure();
     plot(s_therm); hold on; grid on;
-    OA2020_bar = bar(aasm2020_event(1, :)*-2, 'FaceColor', 'r', 'BarWidth', 1);
+    OA2020_bar = bar(aasm2020_event(1, :)*-1, 'FaceColor', 'r', 'BarWidth', 1);
     set(OA2020_bar, 'FaceAlpha', 0.2);
-    CA2020_bar = bar(aasm2020_event(2, :)*-2, 'FaceColor', 'g', 'BarWidth', 1);
+    CA2020_bar = bar(aasm2020_event(2, :)*-1, 'FaceColor', 'g', 'BarWidth', 1);
     set(CA2020_bar, 'FaceAlpha', 0.2);
-    MA2020_bar = bar(aasm2020_event(3, :)*-2, 'FaceColor', 'm', 'BarWidth', 1);
+    MA2020_bar = bar(aasm2020_event(3, :)*-1, 'FaceColor', 'm', 'BarWidth', 1);
     set(MA2020_bar, 'FaceAlpha', 0.2);
     title("s_therm");
-
 
     % Artifact檢查 大於120s無呼吸 threshold 0.3
     no_breath = 0;
@@ -247,32 +246,46 @@ for i = 1 : filesNumber
         if s_therm(j) <= 0.3
             no_breath = no_breath + 1;
         else
-            if no_breath >= 120
+            if no_breath >= 180
                 detect_matrix(1, j-no_breath:j) = 1;
             end
             no_breath = 0;
         end
     end
 
-    % 連續檢查10s無呼吸 threshold 1
-    no_breath = 0;
-    for j = 1:length(s_therm)-10
-        lmax = max(s_therm(j:j+10));
-        lmin = min(s_therm(j:j+10));
-        if lmin < 1 && (lmin / lmax) < 0.1
+    % 連續檢查30s有無下降90%且最小值小於 threshold 1
+    windows = 30;
+    for j = 1:length(s_therm)-windows
+        % 無artifact且尚未經過Apnea檢查
+        if detect_matrix(1, j) ~= 1 && detect_matrix(2, j) ~= 1
+            [lmax, imax] = max(s_therm(j:j+windows));
+            [lmin, imin] = min(s_therm(j:j+windows));
+            % 最小值小於threshold且下降超過90%
+            if lmin < 1 && (lmin / lmax) < 0.1
+                % 向後檢查是否持續小於90%
+                no_breath = 0;
+                for k = 1:180
+                    if (s_therm(j+imin-1+k) / lmax) < 0.1
+                        no_breath = no_breath + 1;
+                    else
+                        % 超過10秒標記為Apnea
+                        if no_breath >= 10
+                            detect_matrix(2, j+imin-1:j+imin-1+no_breath) = 1;
+                        end
+                        no_breath = 0;
+                        break;
+                    end
+                end
+            end
+        end
     end
-
-%     offset = 5; % 前5秒與後5秒的震幅變化百分比，偵測時index要右移8單位
-%     s_therm_per = zeros(1, length(s_therm)-offset*2+1);
-%     for j = 1:length(s_therm)-offset*2
-%         percentage = mean(s_therm(j+offset+1:j+offset*2)) / mean(s_therm(j:j+offset));
-%         s_therm_per(1, j) = percentage; 
-%     end
-% 
-%     plot(s_therm_per);
+    OAdetect_bar = bar(detect_matrix(2, :)*-2, 'FaceColor', 'r', 'BarWidth', 1);
+    set(OAdetect_bar, 'FaceAlpha', 0.2);
+    artifact_bar = bar(detect_matrix(1, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
+    set(artifact_bar, 'FaceAlpha', 0.2);
 
 
-    % Hypopnea (npress下降30%且大於10秒並伴隨血氧下降3%或Arousal，且不是Apnea)
+    %% Hypopnea (npress下降30%且大於10秒並伴隨血氧下降3%或Arousal，且不是Apnea)
     s_npress = second_matrix(1, :);
     figure();
     plot(s_npress); hold on; grid on;
@@ -283,6 +296,19 @@ for i = 1 : filesNumber
     MH2020_bar = bar(aasm2020_event(6, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
     set(MH2020_bar, 'FaceAlpha', 0.2);
     title("s_npress");
+
+    % Artifact檢查 大於120s無呼吸 threshold 0.3
+    no_breath = 0;
+    for j = 1:length(s_npress)
+        if s_npress(j) <= 0.3
+            no_breath = no_breath + 1;
+        else
+            if no_breath >= 180
+                detect_matrix(1, j-no_breath:j) = 1;
+            end
+            no_breath = 0;
+        end
+    end
 
     %% 原訊號
     % NPress
