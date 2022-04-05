@@ -188,9 +188,9 @@ for i = 1 : filesNumber
     aasm2013 = readtable('.\2022data\20191018_徐O文_2013aasm.csv');
     aasm2020 = readtable('.\2022data\20191018_徐O文_2020aasm.csv');
 
-    % OA CA MA OH CH MH
+    % OA CA MA OH CH MH SpO2
     aasm2013_event = zeros(6, epoch*30);
-    aasm2020_event = zeros(6, epoch*30);
+    aasm2020_event = zeros(7, epoch*30);
 
     for j = 1:height(aasm2013)
         if string(aasm2013(j, 1).Var1) == "OA"
@@ -220,13 +220,15 @@ for i = 1 : filesNumber
             aasm2020_event(5, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         elseif string(aasm2020(j, 1).Var1) == "MH"
             aasm2020_event(6, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+        elseif string(aasm2020(j, 1).Var1) == "SpO2 Desat"
+            aasm2020_event(7, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         end
     end
 
     %% 偵測演算法
 
-    % Apnea_artifact、Apnea_type、Hypopnea_artifact、Hypopnea_type、Desat
-    detect_matrix = zeros(4, epoch*30);
+    % Apnea_artifact、Apnea_type、Hypopnea_artifact、Hypopnea_type、SpO2_artifact、SpO2_Desat
+    detect_matrix = zeros(6, epoch*30);
 
     %% Apnea (therm下降90%且大於10秒)
     s_therm = second_matrix(2, :);
@@ -255,13 +257,14 @@ for i = 1 : filesNumber
 
     % 連續檢查30s有無下降90%且最小值小於 threshold 1
     windows = 30;
+    threshold = 1;
     for j = 1:length(s_therm)-windows
         % 無artifact且尚未經過Apnea檢查
         if detect_matrix(1, j) ~= 1 && detect_matrix(2, j) ~= 1
             [lmax, imax] = max(s_therm(j:j+windows));
             [lmin, imin] = min(s_therm(j:j+windows));
             % 最小值小於threshold且下降超過90%
-            if lmin < 1 && (lmin / lmax) < 0.1
+            if lmin < threshold && (lmin / lmax) < 0.1
                 % 向後檢查是否持續小於90%
                 no_breath = 0;
                 for k = 1:180
@@ -289,11 +292,11 @@ for i = 1 : filesNumber
     s_npress = second_matrix(1, :);
     figure();
     plot(s_npress); hold on; grid on;
-    OH2020_bar = bar(aasm2020_event(4, :)*-2, 'FaceColor', 'b', 'BarWidth', 1);
+    OH2020_bar = bar(aasm2020_event(4, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
     set(OH2020_bar, 'FaceAlpha', 0.2);
-    CH2020_bar = bar(aasm2020_event(5, :)*-2, 'FaceColor', 'c', 'BarWidth', 1);
+    CH2020_bar = bar(aasm2020_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
     set(CH2020_bar, 'FaceAlpha', 0.2);
-    MH2020_bar = bar(aasm2020_event(6, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
+    MH2020_bar = bar(aasm2020_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
     set(MH2020_bar, 'FaceAlpha', 0.2);
     title("s_npress");
 
@@ -304,11 +307,85 @@ for i = 1 : filesNumber
             no_breath = no_breath + 1;
         else
             if no_breath >= 180
-                detect_matrix(1, j-no_breath:j) = 1;
+                detect_matrix(3, j-no_breath:j) = 1;
             end
             no_breath = 0;
         end
     end
+
+    % 連續檢查30s有無下降30%且最小值小於 threshold 0.5
+    windows = 30;
+    threshold = 0.5;
+    for j = 1:length(s_npress)-windows
+        % 無artifact且尚未經過Hypopnea檢查
+        if detect_matrix(3, j) ~= 1 && detect_matrix(4, j) ~= 1
+            [lmax, imax] = max(s_npress(j:j+windows));
+            [lmin, imin] = min(s_npress(j:j+windows));
+            % 最小值小於threshold且下降超過30%
+            if lmin < threshold && (lmin / lmax) < 0.7
+                % 向後檢查是否持續小於30%
+                no_breath = 0;
+                for k = 1:180
+                    if (s_npress(j+imin-1+k) / lmax) < 0.7
+                        no_breath = no_breath + 1;
+                    else
+                        % 超過10秒標記為Hypopnea
+                        if no_breath >= 10
+                            detect_matrix(4, j+imin-1:j+imin-1+no_breath) = 1;
+                        end
+                        no_breath = 0;
+                        break;
+                    end
+                end
+            end
+        end
+    end
+    OHdetect_bar = bar(detect_matrix(4, :)*-2, 'FaceColor', 'b', 'BarWidth', 1);
+    set(OHdetect_bar, 'FaceAlpha', 0.2);
+    artifact_bar = bar(detect_matrix(3, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
+    set(artifact_bar, 'FaceAlpha', 0.2);
+
+    %% SpO2 Desaturation
+    s_spo2 = second_matrix(5, :);
+    figure();
+    plot(s_spo2); hold on; grid on;
+    spo22020_bar = bar(aasm2020_event(7, :)*100, 'FaceColor', 'r', 'BarWidth', 1);
+    set(spo22020_bar, 'FaceAlpha', 0.2);
+    title("s_spo2");
+
+    % Artifact檢查 小於10 大於100
+    for j = 1:length(s_spo2)
+        if s_spo2(j) <= 10 || s_spo2(j) > 100
+            detect_matrix(5, j) = 1;
+        end
+    end
+
+    % 檢查小於3%區間
+    desat = 0;
+    decrease = 0;
+    last_spo2 = s_spo2(1);
+    for j = 2:length(s_spo2)
+        % 持續下降
+        if s_spo2(j) == last_spo2
+            decrease = decrease + 1;
+        % 持續下降
+        elseif s_spo2(j) < last_spo2
+            desat = desat + (last_spo2 - s_spo2(j));
+            decrease = decrease + 1;
+            last_spo2 = s_spo2(j);
+        % 上升
+        elseif s_spo2(j) > last_spo2
+            if desat >= 3
+                detect_matrix(6, j-decrease:j-1) = 1;
+            end
+            desat = 0;
+            decrease = 0;
+        end
+    end
+    spo2_bar = bar(detect_matrix(6, :)*101, 'FaceColor', 'b', 'BarWidth', 1);
+    set(spo2_bar, 'FaceAlpha', 0.2);
+    artifact_bar = bar(detect_matrix(5, :)*101, 'FaceColor', 'k', 'BarWidth', 1);
+    set(artifact_bar, 'FaceAlpha', 0.2);
 
     %% 原訊號
     % NPress
