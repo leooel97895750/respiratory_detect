@@ -240,7 +240,7 @@ for i = 1 : filesNumber
     set(CA2020_bar, 'FaceAlpha', 0.2);
     MA2020_bar = bar(aasm2020_event(3, :)*-1, 'FaceColor', 'm', 'BarWidth', 1);
     set(MA2020_bar, 'FaceAlpha', 0.2);
-    title("s_therm");
+    title("Apnea detection");
 
     % Artifact檢查 大於120s無呼吸 threshold 0.3
     no_breath = 0;
@@ -298,7 +298,7 @@ for i = 1 : filesNumber
     set(CH2020_bar, 'FaceAlpha', 0.2);
     MH2020_bar = bar(aasm2020_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
     set(MH2020_bar, 'FaceAlpha', 0.2);
-    title("s_npress");
+    title("Hypopnea detection");
 
     % Artifact檢查 大於120s無呼吸 threshold 0.3
     no_breath = 0;
@@ -351,7 +351,7 @@ for i = 1 : filesNumber
     plot(s_spo2); hold on; grid on;
     spo22020_bar = bar(aasm2020_event(7, :)*100, 'FaceColor', 'r', 'BarWidth', 1);
     set(spo22020_bar, 'FaceAlpha', 0.2);
-    title("s_spo2");
+    title("SpO2 desaturation detection");
 
     % Artifact檢查 小於10 大於100
     for j = 1:length(s_spo2)
