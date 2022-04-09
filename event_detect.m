@@ -1,8 +1,8 @@
 clear;
 close all;
 
-InputDir = 'C:\Users\leooel97895750\Desktop\respiratory_detect\2022data\';
-%OutputDir = 'C:\Users\leooel97895750\Desktop\respiratory_detect\2022data\';
+InputDir = '.\2022data\';
+%OutputDir = '.\2022data\';
 files = dir([InputDir '*.mat']); %load all .mat files in the folder
 
 %%
@@ -16,7 +16,7 @@ for i = 1 : filesNumber
     %load([InputDir files(i).name]);
     fprintf('file(%d/%d): %s is loaded.\n',i,filesNumber,files(i).name(1:end-4));
 
-    %% channel 12:NPress 13:Therm 14:Thor 15:Abdo 16:SpO2
+       %% channel 12:NPress 13:Therm 14:Thor 15:Abdo 16:SpO2
 
     % 分析訊號 注意channels到底對不對
     data = load(fullfile(files(i).folder,files(i).name)); %load .mat files in the folder
