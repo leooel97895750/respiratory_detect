@@ -23,18 +23,39 @@ for i = 1 : filesNumber
     %fs = 512;  %社科院 sample rate
     data = data.data;
     
-    c3m2 = data(1, :);
-    c4m1 = data(2, :);
-    f3m2 = data(3, :);
-    f4m1 = data(4, :);
-    o1m2 = data(5, :);
-    o2m1 = data(6, :);
-    e1m2 = data(7, :);
-    e2m1 = data(8, :);
-    emgr = data(9, :);
-    epoch = floor((length(c3m2) / fs) / 30);
+    % c3m2、c4m1、f3m2、f4m1、o1m2、o2m1、e1m2、e2m1、emgr
+    exg = data(1:9, :);
+    epoch = floor((width(exg) / fs) / 30);
     
-    %[Amp(i,:,:),f(i,:),t1(i,:)] = spectrogram(epoch_EXGsignal_seg(:,i),window,overlap,nfft,fs);
+    % stft 一秒一次不重疊
+    window = fs * 1;
+    overlap = 0;
+    nfft = 2^nextpow2(window);
+    for j = 1:height(exg)
+        [s(j,:,:), f(j,:), t(j,:)] = spectrogram(exg(j,:), window, overlap, nfft, fs);
+    end
+    % s為能量強度
+    s = abs(s);
+    
+    % 計算每個能量帶
+    delta = []; % 0~4
+    theta = []; % 4~7
+    lalpha = []; % 8~10
+    halpha = []; % 10~13
+    lbeta = []; % 13~20
+    hbeta = []; % 20~28
+    gamma = []; % 28~50
+    for j = 1:height(exg)
+        for k = 1:width(t)
+            delta(j, k) = sum(s(j, 1:6, k));
+            theta(j, k) = sum(s(j, 7:10, k));
+            lalpha(j, k) = sum(s(j, 11:14, k));
+            halpha(j, k) = sum(s(j, 15:18, k));
+            lbeta(j, k) = sum(s(j, 18:27, k));
+            hbeta(j, k) = sum(s(j, 27:37, k));
+            gamma(j, k) = sum(s(j, 37:65, k));
+        end
+    end
     
     waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
 end
