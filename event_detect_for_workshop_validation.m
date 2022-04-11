@@ -104,16 +104,23 @@ for i = 1 : filesNumber
     %% 驗證
 
     % OA CA MA OH CH MH SpO2
-    event = load('G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\event\event.mat');
+%     event = load('G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\event\event.mat');
     aasm2020_event = zeros(7, epoch*30);
-    for j = 1:length(event.event_name)
-        if string(event.event_name(j)) == "Obstructive Apnea"
-            mystart = seconds(cell2mat(event.event_second(j)));
-            myduration = duration(event.event_duration(j), 'InputFormat', 'mm:ss.S');
-            myend = mystart + myduration;
-            for k = round(seconds(mystart)):round(seconds(myend))
-                aasm2020_event(1, k) = 1;
-            end
+%     for j = 1:length(event.event_name)
+%         if string(event.event_name(j)) == "Obstructive Apnea"
+%             mystart = seconds(cell2mat(event.event_second(j)));
+%             myduration = duration(event.event_duration(j), 'InputFormat', 'mm:ss.S');
+%             myend = mystart + myduration;
+%             for k = round(seconds(mystart)):round(seconds(myend))
+%                 aasm2020_event(1, k) = 1;
+%             end
+%         end
+%     end
+
+    aasm2020 = readtable('.\workshop0606data\workshop_golden_event.csv');
+    for j = 1:height(aasm2020)
+        if string(aasm2020(j, 1).Var1) == "Obstructive Apnea"
+            aasm2020_event(1, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         end
     end
 
@@ -178,8 +185,53 @@ for i = 1 : filesNumber
     set(artifact_bar, 'FaceAlpha', 0.2);
     
     %% confuse matrix
+    % tp 成功偵測出apnea
+    % tn 成功偵測出無事件(不考量)
+    % fp 偵測錯誤
+    % fn 漏抓
+    tp = 0;
+    fp = 0;
+    fn = 0;
+    myoa = detect_matrix(2,:);
+    ansoa = aasm2020_event(1, :);
     
+    cont = 0;
+    es = 0;
+    ee = 0;
+    for j = 1:length(ansoa)
+        if (ansoa(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (ansoa(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(myoa(es:ee)) > 0
+                tp = tp + 1;
+            else
+                fn = fn + 1;
+            end
+        end
+    end
+    for j = 1:length(myoa)
+        if (myoa(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (myoa(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(ansoa(es:ee)) == 0
+                fp = fp + 1;
+            end
+        end
+    end
     
+    % Sensitivity(TP/(TP+FN))
+    % Precision(TP/(TP+FP))
+    
+    sensitivity = tp / (tp+fn);
+    precision = tp / (tp+fp);
+    
+    %%
     waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
 end
 close(h);
