@@ -103,28 +103,64 @@ for i = 1 : filesNumber
         end
         arousal_amp(c, :) = exg_amp(c, find(arousal2020 == 1));
         
-%         figure();
-%         hold on; grid on;
-%         for k = 1:length(arousal_fft)
-%             plot(f(1:65), arousal_fft(1:65, k));
-%         end
-%         title(string(c));
     end
     % 畫圖 撒點觀察 x = band energy ; y = singal amplitude
+%     channels = ["c3m2","c4m1","f3m2","f4m1","o1m2","o2m1","e1m2","e2m1","emgr"];
+%     for j = 1:length(channels)
+%         figure(); hold on; grid on;
+%         scatter(band(1, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'delta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(2, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'theta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(3, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'alpha', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(4, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'beta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(5, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'gamma', 'MarkerEdgeAlpha', 0.5);
+%         ylim([0  30000]);
+%         xlim([0 3000]);
+%         title(channels(j));
+%     end
+    %% 觀察Arousal前5秒在各種channels下的組成 (看不出一個所以然來)
+    
+    % 抓前五秒
+%     pre5s = zeros(1, length(arousal2020));
+%     for j = 30:length(arousal2020)
+%         if (arousal2020(j) == 1) && (arousal2020(j-1) == 0)
+%             for k = 1:5
+%                 if arousal2020(j-k) == 0
+%                     pre5s(1, j-k) = 1;
+%                 end
+%             end
+%         end
+%     end
+    
+    % 畫圖 撒點觀察 x = band energy ; y = singal amplitude
+%     channels = ["c3m2","c4m1","f3m2","f4m1","o1m2","o2m1","e1m2","e2m1","emgr"];
+%     for j = 1:length(channels)
+%         figure(); hold on; grid on;
+%         scatter(band(1, j, find(pre5s == 1)), exg_amp(j, find(pre5s == 1)), 'DisplayName', 'delta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(2, j, find(pre5s == 1)), exg_amp(j, find(pre5s == 1)), 'DisplayName', 'theta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(3, j, find(pre5s == 1)), exg_amp(j, find(pre5s == 1)), 'DisplayName', 'alpha', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(4, j, find(pre5s == 1)), exg_amp(j, find(pre5s == 1)), 'DisplayName', 'beta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(5, j, find(pre5s == 1)), exg_amp(j, find(pre5s == 1)), 'DisplayName', 'gamma', 'MarkerEdgeAlpha', 0.5);
+%         ylim([0  30000]);
+%         xlim([0 3000]);
+%         title(channels(j));
+%     end
+    
+    %% 抓個案來看
+    % 4821 ~ 4825 21200~21212 21383~21390
+    aro_s = 2899;
+    aro_e = 2905;
     channels = ["c3m2","c4m1","f3m2","f4m1","o1m2","o2m1","e1m2","e2m1","emgr"];
     for j = 1:length(channels)
         figure(); hold on; grid on;
-        scatter(band(1, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'delta', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(2, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'theta', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(3, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'alpha', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(4, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'beta', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(5, j, find(arousal2020 == 1)), arousal_amp(j, :), 'DisplayName', 'gamma', 'MarkerEdgeAlpha', 0.5);
+        scatter(band(1, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'delta', 'MarkerEdgeAlpha', 0.5);
+        scatter(band(2, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'theta', 'MarkerEdgeAlpha', 0.5);
+        scatter(band(3, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'alpha', 'MarkerEdgeAlpha', 0.5);
+        scatter(band(4, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'beta', 'MarkerEdgeAlpha', 0.5);
+        scatter(band(5, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'gamma', 'MarkerEdgeAlpha', 0.5);
         ylim([0  30000]);
         xlim([0 3000]);
         title(channels(j));
     end
-    
-    % 抓個案來看
     
     waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
 end
