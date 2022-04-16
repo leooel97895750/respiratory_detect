@@ -94,16 +94,16 @@ for i = 1 : filesNumber
 %     end
     
     %% 觀察Arousal在各種channels下的組成 (看不出一個所以然來)
-    for c = 1:height(exg)
-        arousal_fft(c, :, :) = reshape(s(c, :, find(arousal2020 == 1)), 129, []);
-        arousal_fft(c, :, :) = 20*log10(arousal_fft(c, :, :));
-        
-        for j = 1:epoch*30
-            exg_amp(c, j) = sum(abs(exg(c, (j-1)*fs+1:j*fs)));
-        end
-        arousal_amp(c, :) = exg_amp(c, find(arousal2020 == 1));
-        
-    end
+%     for c = 1:height(exg)
+%         arousal_fft(c, :, :) = reshape(s(c, :, find(arousal2020 == 1)), 129, []);
+%         arousal_fft(c, :, :) = 20*log10(arousal_fft(c, :, :));
+%         
+%         for j = 1:epoch*30
+%             exg_amp(c, j) = sum(abs(exg(c, (j-1)*fs+1:j*fs)));
+%         end
+%         arousal_amp(c, :) = exg_amp(c, find(arousal2020 == 1));
+%         
+%     end
     % 畫圖 撒點觀察 x = band energy ; y = singal amplitude
 %     channels = ["c3m2","c4m1","f3m2","f4m1","o1m2","o2m1","e1m2","e2m1","emgr"];
 %     for j = 1:length(channels)
@@ -147,20 +147,20 @@ for i = 1 : filesNumber
     
     %% 抓個案來看
     % 4821 ~ 4825 21200~21212 21383~21390
-    aro_s = 2899;
-    aro_e = 2905;
-    channels = ["c3m2","c4m1","f3m2","f4m1","o1m2","o2m1","e1m2","e2m1","emgr"];
-    for j = 1:length(channels)
-        figure(); hold on; grid on;
-        scatter(band(1, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'delta', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(2, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'theta', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(3, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'alpha', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(4, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'beta', 'MarkerEdgeAlpha', 0.5);
-        scatter(band(5, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'gamma', 'MarkerEdgeAlpha', 0.5);
-        ylim([0  30000]);
-        xlim([0 3000]);
-        title(channels(j));
-    end
+%     aro_s = 6500;
+%     aro_e = 6509;
+%     channels = ["c3m2","c4m1","f3m2","f4m1","o1m2","o2m1","e1m2","e2m1","emgr"];
+%     for j = 1:length(channels)
+%         figure(); hold on; grid on;
+%         scatter(band(1, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'delta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(2, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'theta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(3, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'alpha', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(4, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'beta', 'MarkerEdgeAlpha', 0.5);
+%         scatter(band(5, j, aro_s:aro_e), exg_amp(j, aro_s:aro_e), 'filled', 'DisplayName', 'gamma', 'MarkerEdgeAlpha', 0.5);
+%         ylim([0  30000]);
+%         xlim([0 3000]);
+%         title(channels(j));
+%     end
     
     waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
 end
