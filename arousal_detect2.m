@@ -50,6 +50,7 @@ for i = 1 : filesNumber
     % band
     % 計算每個能量帶
     % delta 0.5~4、theta 4~8、alpha 8~13、lbeta 13~28、gamma 28~50
+    band = zeros(5, 9, epoch*30);
     for j = 1:height(exg)
         for k = 1:epoch*30
             band(1, j, k) = mean(s(j, 2:6, k));
@@ -63,6 +64,7 @@ for i = 1 : filesNumber
 
     % exg_amplitude
     % 計算每2秒震幅大小 overlap 1秒
+    exg_amplitude = zeros(9, epoch*30);
     for j = 1:height(exg)
         for k = 1:epoch*30
             segment = exg(j, (k-1)*fs+1:(k-1)*fs+fs*2);
@@ -90,10 +92,26 @@ for i = 1 : filesNumber
         for c = 1:9
             % 10秒為一組，檢查第11秒的值有無突然的上升
             for k = 11:epoch*30-15
-                segment = band(b, c, k-10:k-1);
-                count = 0;
-                threshold = mean(segment) + std(segment)*2;
+                segment = [];
+                if k > 20 
+                    count = 0;
+                    for j = 1:20
+                        if band_change(b, c, k-j) == 0
+                            segment(end+1) = band(b, c , k-j);
+                            count = count + 1;
+                        end
+                        if count == 10 
+                            break;
+                        end
+                    end
+                else
+                    segment = band(b, c, k-10:k-1);
+                end
+                
+                % 4倍標準差
+                threshold = mean(segment) + std(segment)*4;
                 tplot(c, k) = threshold;
+                count = 0;
                 % 檢查第11秒
                 if band(b, c, k) > threshold
                     % 往後檢查有幾秒持續大於threshold
