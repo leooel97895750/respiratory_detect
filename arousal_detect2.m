@@ -91,11 +91,11 @@ for i = 1 : filesNumber
         tplot = zeros(9, epoch*30);
         for c = 1:9
             % 10秒為一組，檢查第11秒的值有無突然的上升
-            for k = 11:epoch*30-15
+            for k = 11:epoch*30-30
                 segment = [];
-                if k > 20 
+                if k > 30 
                     count = 0;
-                    for j = 1:20
+                    for j = 1:30
                         if band_change(b, c, k-j) == 0
                             segment(end+1) = band(b, c , k-j);
                             count = count + 1;
@@ -115,9 +115,9 @@ for i = 1 : filesNumber
                 % 檢查第11秒
                 if band(b, c, k) > threshold
                     % 往後檢查有幾秒持續大於threshold
-                    % 若大於15秒則不算
+                    % 若大於20秒則不算
                     count = 0;
-                    for j = 1:15
+                    for j = 1:30
                         if band(b, c, k+j) > threshold
                             count = count + 1;
                         else
@@ -126,7 +126,9 @@ for i = 1 : filesNumber
                         end
                     end
                     % 在矩陣中標記
-                    band_change(b, c, k:k+count) = 1;
+                    if count <= 20
+                        band_change(b, c, k:k+count) = 1;
+                    end
                 end
             end
             % 畫圖 5 * 9 (太多了)
