@@ -45,12 +45,12 @@ for i = 1 : filesNumber
     end
     % s為能量強度
     s = abs(s);
-    s = s ./ window;
+    s = (s ./ max(reshape(s, [], 1))) .*100;
     
     % band
     % 計算每個能量帶
     % delta 0.5~4、theta 4~8、alpha 8~13、lbeta 13~28、gamma 28~50
-    band = zeros(5, 9, epoch*30);
+    band = zeros(6, 9, epoch*30);
     for j = 1:height(exg)
         for k = 1:epoch*30
             band(1, j, k) = mean(s(j, 2:6, k));
@@ -134,20 +134,23 @@ for i = 1 : filesNumber
             % 畫圖 5 * 9 (太多了)
         end
         % 畫圖 5 * 1 指定channels
-        figure();
-        hold on; grid on;
-        c = 1; % 指定要看哪個channels
-        plot(reshape(band(b, c, :), 1, []));
-        plot(tplot(c, :));
-        band_bar = bar(reshape(band_change(b, c, :), 1, [])*10,'FaceColor','b','BarWidth',1);
-        set(band_bar, 'FaceAlpha', 0.4);
-        arousal_bar = bar(arousal2020*10, 'FaceColor', 'r', 'BarWidth', 1);
-        set(arousal_bar, 'FaceAlpha', 0.4);
-        title("band: "+string(b));
+%         figure();
+%         hold on; grid on;
+%         c = 6; % 指定要看哪個channels
+%         plot(reshape(band(b, c, :), 1, []), 'DisplayName', 'power');
+%         plot(tplot(c, :), 'DisplayName', 'threshold');
+%         band_bar = bar(reshape(band_change(b, c, :), 1, [])*10, 'FaceColor', 'b', 'BarWidth', 1, 'DisplayName', 'arousal detect');
+%         set(band_bar, 'FaceAlpha', 0.4);
+%         arousal_bar = bar(arousal2020*10, 'FaceColor', 'r', 'BarWidth', 1, 'DisplayName', 'arousal answer');
+%         set(arousal_bar, 'FaceAlpha', 0.4);
+%         ylabel("Power");
+%         xlabel("Time (s)");
+%         title("band: "+string(b));
 
     end
 
     %% 驗證震幅
+    % 震幅
     figure();
     ax(1) = subplot(3,1,1);
     hold on; grid on;
@@ -165,6 +168,7 @@ for i = 1 : filesNumber
     axis tight;
     ylim([0 1000]);
 
+    % 頻率
     ax(2) = subplot(3,1,2);
     hold on; grid on;
     plot(reshape(band(1, 1, :), 1, []), 'DisplayName', 'delta');
@@ -177,6 +181,7 @@ for i = 1 : filesNumber
     axis tight;
     ylim([0 3]);
 
+    % hypnogram
     ax(3) = subplot(3,1,3);
     hold on; grid on;
     bigstage = [];
@@ -199,6 +204,38 @@ for i = 1 : filesNumber
     yticklabels({'N3','N2','N1','W','R'});
     
     linkaxes(ax, 'x');
+
+    %% 畫各個channels與bands的預測圖
+    for c = 1:9
+        figure();
+        hold on; grid on;
+        % 標準答案 紅
+        arousal_bar = bar(arousal2020*6, 'FaceColor', 'r', 'BarWidth', 1);
+        set(arousal_bar, 'FaceAlpha', 0.2);
+        % 訊號異常 黑
+        abnormal_bar = bar(exg_abnormal*6, 'FaceColor', 'k', 'BarWidth', 1);
+        set(abnormal_bar, 'FaceAlpha', 0.2);
+        % beta 綠
+        beta_bar = bar(reshape(band_change(4, c, :)*5, 1, []), 'FaceColor', 'g', 'BarWidth', 1, 'DisplayName', 'beta');
+        set(beta_bar, 'FaceAlpha', 0.2);
+        % alpha 黃
+        alpha_bar = bar(reshape(band_change(3, c, :)*4, 1, []), 'FaceColor', '#EDB120', 'BarWidth', 1, 'DisplayName', 'alpha');
+        set(alpha_bar, 'FaceAlpha', 0.2);
+        % gamma 紫
+        gamma_bar = bar(reshape(band_change(5, c, :)*3, 1, []), 'FaceColor', 'm', 'BarWidth', 1, 'DisplayName', 'gamma');
+        set(gamma_bar, 'FaceAlpha', 0.2);
+        % theta 橘
+        theta_bar = bar(reshape(band_change(2, c, :)*2, 1, []), 'FaceColor', '#D95319', 'BarWidth', 1, 'DisplayName', 'theta');
+        set(theta_bar, 'FaceAlpha', 0.2);
+        % delta 藍
+        delta_bar = bar(reshape(band_change(1, c, :)*1, 1, []), 'FaceColor', 'b', 'BarWidth', 1, 'DisplayName', 'delta');
+        set(delta_bar, 'FaceAlpha', 0.2);
+
+        axis tight;
+        ylim([0 30]);
+        
+        title("channels: " + string(c));
+    end
 
     waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
 end

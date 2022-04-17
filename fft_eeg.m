@@ -17,12 +17,19 @@ for i = 1 : filesNumber
     exg = data(1:9, :);
     epoch = floor((width(exg) / fs) / 30);
 
-    c3m2 = exg(1, 500000:500200);
-    c3m2_fft = fft(c3m2, 256);
-    f = (0:length(c3m2_fft)-1)*fs/length(c3m2_fft);
-    c3m2_fft = abs(c3m2_fft);
-    power = c3m2_fft.^2/length(c3m2_fft);
-    plot(f, power);
+    % 選擇channels 以一秒為window，重疊0.9秒，做fft(整晚訊號直接跑電腦會很盪)
+    c = 1;
+    [s, f, t] = spectrogram(exg(c, 1:100000), 200, 180, 256, 200);
+    figure();
+    surf(t, f, abs(s)./max(abs(s)), 'EdgeColor', 'None');
+    colorbar;
+    colormap jet;
+    set(gca, 'Clim', [0, 1]);
+    view([0, 90]);
+    axis tight;
+    ylim([0, 40]);
+    ylabel('Frequency (Hz)');
+    xlabel('Times (s)');
 
 
     waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
