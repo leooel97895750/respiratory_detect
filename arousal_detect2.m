@@ -213,7 +213,7 @@ for i = 1 : filesNumber
         arousal_bar = bar(arousal2020*6, 'FaceColor', 'r', 'BarWidth', 1);
         set(arousal_bar, 'FaceAlpha', 0.2);
         % 訊號異常 黑
-        abnormal_bar = bar(exg_abnormal*6, 'FaceColor', 'k', 'BarWidth', 1);
+        abnormal_bar = bar(exg_abnormal(c, :)*6, 'FaceColor', 'k', 'BarWidth', 1);
         set(abnormal_bar, 'FaceAlpha', 0.2);
         % beta 綠
         beta_bar = bar(reshape(band_change(4, c, :)*5, 1, []), 'FaceColor', 'g', 'BarWidth', 1, 'DisplayName', 'beta');
