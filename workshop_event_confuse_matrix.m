@@ -19,7 +19,7 @@ for i = 2:length(sheets)
     
     % 標準答案
     aasm2020_event = zeros(1, 742*30);
-    aasm2020 = readtable('.\workshop0606data\workshop_golden_event.csv');
+    aasm2020 = readtable('.\workshop0606data\ncku_golden_event.csv');
     for j = 1:height(aasm2020)
         if string(aasm2020(j, 1).Var1) == "ARO SPONT"
             aasm2020_event(1, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;

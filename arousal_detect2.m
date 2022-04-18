@@ -28,7 +28,7 @@ for i = 1 : filesNumber
     %% 標準答案
     stage = readtable('.\workshop0606data\stage\stage.csv');
     stage = stage.Var1;
-    aasm2020 = readtable('.\workshop0606data\workshop_golden_event_lessthan15.csv');
+    aasm2020 = readtable('.\workshop0606data\ncku_golden_event.csv');
 %     aasm2020 = readtable('.\2022data\20191018_徐O文_2020aasm.csv');
     arousal2020 = zeros(1, epoch*30);
     for j = 1:height(aasm2020)
@@ -222,39 +222,39 @@ for i = 1 : filesNumber
     arousal_possible = arousal_bandsum;
     % 2 channels以上有同樣特徵才視為Arousal
     arousal_possible(arousal_possible <= 2) = 0;
-    % 模糊化alpha、beta、gamma 因Arousal特性向後模糊1秒
+    % 模糊化alpha、beta、gamma 因Arousal特性向後模糊1秒、3秒、3秒
     fuzzy_alpha = arousal_possible(3, :);
     fuzzy_beta = arousal_possible(4, :);
     fuzzy_gamma = arousal_possible(5, :);
-    for j = 1:epoch*30-1
+    for j = 1:epoch*30-2
         if (arousal_possible(3, j) ~= 0) && (arousal_possible(3, j+1) == 0)
             fuzzy_alpha(j+1) = arousal_possible(3, j);
         end
         if (arousal_possible(4, j) ~= 0) && (arousal_possible(3, j+1) == 0)
-            fuzzy_beta(j+1) = arousal_possible(4, j);
+            fuzzy_beta(j+1:j+3) = arousal_possible(4, j);
         end
         if (arousal_possible(5, j) ~= 0) && (arousal_possible(3, j+1) == 0)
-            fuzzy_gamma(j+1) = arousal_possible(5, j);
+            fuzzy_gamma(j+1:j+3) = arousal_possible(5, j);
         end
     end
     arousal_possible(3, :) = fuzzy_alpha;
     arousal_possible(4, :) = fuzzy_beta;
     arousal_possible(5, :) = fuzzy_gamma;
     
-    % 直接將目前有數值的band合併視為Arousal
+    
     arousal_detect = zeros(1, epoch*30);
+    % 直接將目前有數值的band合併視為Arousal
+    % 直接將EMG納入
     for j = 1:epoch*30
-        % theta、alpha、beta、gamma
-        if sum(arousal_possible(1:5, j)) ~= 0
-            arousal_detect(j) = 1;
-        end
-        % 加入全部channels的abnormal區段
-        if sum(exg_abnormal(1:9, j)) >= 7
-            arousal_detect(j) = 1;
+        if emg_amp_change(j) == 1
+            % theta、alpha、beta、gamma
+            if sum(arousal_possible(2:5, j)) >= 2
+                arousal_detect(j) = 1;
+            end
         end
     end
 
-    % 檢查大於3秒小於15秒，同時檢查EMG
+    % 檢查大於3秒小於15秒
     count = 0;
     for j = 1:epoch*30
         % 計算連續次數
@@ -263,22 +263,17 @@ for i = 1 : filesNumber
         % 當連續結束則計算秒數
         else
             % 超出時間範圍則刪除
-            if (count ~= 0) && ((count < 3) || (count > 15))
+            if (count ~= 0) && (count < 3)
                 arousal_detect(j-count:j-1) = 0;
-            % 時間範圍內無EMG也刪除
-            else
-                if(sum(emg_amp_change(j-count:j-1)) == 0)
-                    arousal_detect(j-count:j-1) = 0;
-                end
             end
             count = 0;
         end
     end
 
-    % 不計算wake的部分
-    for j = 1:length(stage)
-        if stage(j) == 0
-            arousal_detect((j-1)*30+1:(j-1)*30+30) = 0;
+    % 加入全部channels的abnormal區段
+    for j = 1:epoch*30
+        if sum(exg_abnormal(1:9, j)) >= 7
+            arousal_detect(j) = 1;
         end
     end
 
@@ -327,7 +322,7 @@ for i = 1 : filesNumber
     % Precision(TP/(TP+FP)) 檢測的準確性
     sensitivity = tp / (tp+fn);
     precision = tp / (tp+fp);
-    disp("sensitivity: "+string(sensitivity)+" presision: "+string(precision));
+    disp("sensitivity: "+string(sensitivity)+" precision: "+string(precision));
     
     %% 畫bands偵測圖
     figure();
@@ -338,7 +333,7 @@ for i = 1 : filesNumber
     % 偵測答案 藍
     detect_bar = bar(arousal_detect*-1, 'FaceColor', 'b', 'BarWidth', 1);
     % 訊號異常 黑
-    abnormal_bar = bar((sum(exg_abnormal) ~= 0)*6, 'FaceColor', 'k', 'BarWidth', 1);
+    abnormal_bar = bar((sum(exg_abnormal) == 9)*6, 'FaceColor', 'k', 'BarWidth', 1);
     set(abnormal_bar, 'FaceAlpha', 0.2);
     % EMG
     plot(emg_amp./max(emg_amp));
