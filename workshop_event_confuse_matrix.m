@@ -11,7 +11,7 @@ for i = 2:length(sheets)
     % 技師答案
     [NUM{1},TXT{1},RAW{1}] = xlsread(xlsFile, string(sheets(i)));
     event = RAW{1,1}(:, 4:6);
-    oa = event(find(event(:,1)=="Obstructive Apnea"), :);
+    oa = event(find(event(:,1)=="ARO SPONT"), :);
     myoa = zeros(1, 742*30);
     for j = 1:height(oa)
         myoa(round(cell2mat(oa(j, 2))):round(cell2mat(oa(j, 3)))) = 1;
@@ -21,7 +21,7 @@ for i = 2:length(sheets)
     aasm2020_event = zeros(1, 742*30);
     aasm2020 = readtable('.\workshop0606data\workshop_golden_event.csv');
     for j = 1:height(aasm2020)
-        if string(aasm2020(j, 1).Var1) == "Obstructive Apnea"
+        if string(aasm2020(j, 1).Var1) == "ARO SPONT"
             aasm2020_event(1, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         end
     end
