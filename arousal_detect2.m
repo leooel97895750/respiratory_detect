@@ -205,13 +205,50 @@ for i = 1 : filesNumber
     
     linkaxes(ax, 'x');
 
-    %% 畫各個channels與bands的預測圖
+    %% Arousal偵測
+    arousal_detect = zeros(9, epoch*30);
+
+    for c = 1:9
+        %delta = reshape(band_change(1, c, :), [], 1);
+        theta = reshape(band_change(2, c, :), [], 1);
+        alpha = reshape(band_change(3, c, :), [], 1);
+        beta = reshape(band_change(4, c, :), [], 1);
+        gamma = reshape(band_change(5, c, :), [], 1);
+        
+        % 以下為決定最後Arousal的演算法
+        arousal_tmp = zeros(1, epoch*30);
+        for j = 1:epoch*30
+            if theta(j) == 1 || alpha(j) == 1 || beta(j) == 1 || gamma(j) == 1
+                arousal_tmp(j) = 1;
+            end
+        end
+        % 檢查大於3秒小於15秒
+        count = 0;
+        for j = 1:epoch*30
+            % 計算連續次數
+            if arousal_tmp(j) == 1
+                count = count + 1;
+            % 當連續結束則計算秒數
+            else
+                % 超出則刪除
+                if (count ~= 0) && ((count < 3) || (count > 15))
+                    arousal_tmp(j-count:j-1) = 0;
+                end
+                count = 0;
+            end
+        end
+        arousal_detect(c, :) = arousal_tmp;
+    end
+    
+    %% 畫各個channels與bands的偵測圖
     for c = 1:9
         figure();
         hold on; grid on;
         % 標準答案 紅
         arousal_bar = bar(arousal2020*6, 'FaceColor', 'r', 'BarWidth', 1);
         set(arousal_bar, 'FaceAlpha', 0.2);
+        % 偵測答案 藍
+        detect_bar = bar(arousal_detect(c, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
         % 訊號異常 黑
         abnormal_bar = bar(exg_abnormal(c, :)*6, 'FaceColor', 'k', 'BarWidth', 1);
         set(abnormal_bar, 'FaceAlpha', 0.2);
