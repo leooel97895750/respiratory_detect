@@ -1,7 +1,7 @@
 clear;
 close all;
 
-InputDir = '.\2022data\';
+InputDir = '.\workshop0606data\rawdata\';
 %OutputDir = '.\2022data\';
 files = dir([InputDir '*.mat']); %load all .mat files in the folder
 
@@ -184,46 +184,57 @@ for i = 1 : filesNumber
 
     %% 驗證
 
-    % 畫出: 原訊號、震幅變化、2013AASM標示處、2020AASM標示處
-    aasm2013 = readtable('.\2022data\20191018_徐O文_2013aasm.csv');
-    aasm2020 = readtable('.\2022data\20191018_徐O文_2020aasm.csv');
-
-    % OA CA MA OH CH MH SpO2
-    aasm2013_event = zeros(6, epoch*30);
     aasm2020_event = zeros(7, epoch*30);
-
-    for j = 1:height(aasm2013)
-        if string(aasm2013(j, 1).Var1) == "OA"
-            aasm2013_event(1, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
-        elseif string(aasm2013(j, 1).Var1) == "CA"
-            aasm2013_event(2, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
-        elseif string(aasm2013(j, 1).Var1) == "MA"
-            aasm2013_event(3, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
-        elseif string(aasm2013(j, 1).Var1) == "OH"
-            aasm2013_event(4, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
-        elseif string(aasm2013(j, 1).Var1) == "CH"
-            aasm2013_event(5, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
-        elseif string(aasm2013(j, 1).Var1) == "MH"
-            aasm2013_event(6, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
-        end
-    end
+    aasm2020 = readtable('.\workshop0606data\workshop_golden_event.csv');
     for j = 1:height(aasm2020)
-        if string(aasm2020(j, 1).Var1) == "OA"
+        if string(aasm2020(j, 1).Var1) == "Obstructive Apnea"
             aasm2020_event(1, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
-        elseif string(aasm2020(j, 1).Var1) == "CA"
-            aasm2020_event(2, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
-        elseif string(aasm2020(j, 1).Var1) == "MA"
-            aasm2020_event(3, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
-        elseif string(aasm2020(j, 1).Var1) == "OH"
+        elseif string(aasm2020(j, 1).Var1) == "Obstructive Hypopnea"
             aasm2020_event(4, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
-        elseif string(aasm2020(j, 1).Var1) == "CH"
-            aasm2020_event(5, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
-        elseif string(aasm2020(j, 1).Var1) == "MH"
-            aasm2020_event(6, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         elseif string(aasm2020(j, 1).Var1) == "SpO2 Desat"
             aasm2020_event(7, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
         end
     end
+    % 畫出: 原訊號、震幅變化、2013AASM標示處、2020AASM標示處
+%     aasm2013 = readtable('.\2022data\20191018_徐O文_2013aasm.csv');
+%     aasm2020 = readtable('.\2022data\20191018_徐O文_2020aasm.csv');
+% 
+%     % OA CA MA OH CH MH SpO2
+%     aasm2013_event = zeros(6, epoch*30);
+%     aasm2020_event = zeros(7, epoch*30);
+% 
+%     for j = 1:height(aasm2013)
+%         if string(aasm2013(j, 1).Var1) == "OA"
+%             aasm2013_event(1, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+%         elseif string(aasm2013(j, 1).Var1) == "CA"
+%             aasm2013_event(2, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+%         elseif string(aasm2013(j, 1).Var1) == "MA"
+%             aasm2013_event(3, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+%         elseif string(aasm2013(j, 1).Var1) == "OH"
+%             aasm2013_event(4, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+%         elseif string(aasm2013(j, 1).Var1) == "CH"
+%             aasm2013_event(5, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+%         elseif string(aasm2013(j, 1).Var1) == "MH"
+%             aasm2013_event(6, round(aasm2013(j, 2).Var2) : round(aasm2013(j, 2).Var2 + aasm2013(j, 3).Var3)) = 1;
+%         end
+%     end
+%     for j = 1:height(aasm2020)
+%         if string(aasm2020(j, 1).Var1) == "OA"
+%             aasm2020_event(1, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+%         elseif string(aasm2020(j, 1).Var1) == "CA"
+%             aasm2020_event(2, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+%         elseif string(aasm2020(j, 1).Var1) == "MA"
+%             aasm2020_event(3, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+%         elseif string(aasm2020(j, 1).Var1) == "OH"
+%             aasm2020_event(4, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+%         elseif string(aasm2020(j, 1).Var1) == "CH"
+%             aasm2020_event(5, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+%         elseif string(aasm2020(j, 1).Var1) == "MH"
+%             aasm2020_event(6, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+%         elseif string(aasm2020(j, 1).Var1) == "SpO2 Desat"
+%             aasm2020_event(7, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+%         end
+%     end
 
     %% 偵測演算法
 
@@ -290,15 +301,7 @@ for i = 1 : filesNumber
 
     %% Hypopnea (npress下降30%且大於10秒並伴隨血氧下降3%或Arousal，且不是Apnea)
     s_npress = second_matrix(1, :);
-    figure();
-    plot(s_npress); hold on; grid on;
-    OH2020_bar = bar(aasm2020_event(4, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OH2020_bar, 'FaceAlpha', 0.2);
-    CH2020_bar = bar(aasm2020_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
-    set(CH2020_bar, 'FaceAlpha', 0.2);
-    MH2020_bar = bar(aasm2020_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
-    set(MH2020_bar, 'FaceAlpha', 0.2);
-    title("Hypopnea detection");
+    
 
     % Artifact檢查 大於120s無呼吸 threshold 0.3
     no_breath = 0;
@@ -340,10 +343,7 @@ for i = 1 : filesNumber
             end
         end
     end
-    OHdetect_bar = bar(detect_matrix(4, :)*-2, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OHdetect_bar, 'FaceAlpha', 0.2);
-    artifact_bar = bar(detect_matrix(3, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
-    set(artifact_bar, 'FaceAlpha', 0.2);
+    
 
     %% SpO2 Desaturation
     s_spo2 = second_matrix(5, :);
@@ -393,23 +393,47 @@ for i = 1 : filesNumber
     artifact_bar = bar(detect_matrix(5, :)*101, 'FaceColor', 'k', 'BarWidth', 1);
     set(artifact_bar, 'FaceAlpha', 0.2);
 
+    %% Hypopnea Arousal SpO2
+    arousal = readtable('.\workshop0606data\arousal_detect.csv');
+    arousal = arousal{:, :};
+    count = 0;
+    for j = 11:epoch*30-11
+        % 計算連續次數
+        if detect_matrix(4, j) == 1
+            count = count + 1;
+        % 當連續結束則檢查apnea、arousal、spo2
+        else
+            % 檢查是否跨到apnea範圍，是的話增加apnea範圍，刪除hypopnea
+            if sum(detect_matrix(2, j-10:j+10)) ~= 0
+                detect_matrix(2, j-10:j+10) = 1;
+                detect_matrix(4, j-count:j-1) = 0;
+            end
+            % 檢查範圍前後10秒有無arousal、spo2 desat
+            if (sum(arousal(j-10:j+10)) == 0) && (sum(detect_matrix(6, j-10:j+10)) == 0)
+                detect_matrix(4, j-count:j-1) = 0;
+            end
+            count = 0;
+        end
+    end
+    figure();
+    plot(s_npress); hold on; grid on;
+    OH2020_bar = bar(aasm2020_event(4, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
+    set(OH2020_bar, 'FaceAlpha', 0.2);
+    CH2020_bar = bar(aasm2020_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
+    set(CH2020_bar, 'FaceAlpha', 0.2);
+    MH2020_bar = bar(aasm2020_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
+    set(MH2020_bar, 'FaceAlpha', 0.2);
+    title("Hypopnea detection");
+    OHdetect_bar = bar(detect_matrix(4, :)*-2, 'FaceColor', 'b', 'BarWidth', 1);
+    set(OHdetect_bar, 'FaceAlpha', 0.2);
+    artifact_bar = bar(detect_matrix(3, :)*-2, 'FaceColor', 'k', 'BarWidth', 1);
+    set(artifact_bar, 'FaceAlpha', 0.2);
+
     %% 原訊號
     % NPress
     figure();
     plot(second_matrix(1, :)); hold on; grid on;
     plot(downsample(npress, 25));
-    OA2013_bar = bar(aasm2013_event(1, :)*-1, 'FaceColor', 'r', 'BarWidth', 1);
-    set(OA2013_bar, 'FaceAlpha', 0.2);
-    CA2013_bar = bar(aasm2013_event(2, :)*-1, 'FaceColor', 'g', 'BarWidth', 1);
-    set(CA2013_bar, 'FaceAlpha', 0.2);
-    MA2013_bar = bar(aasm2013_event(3, :)*-1, 'FaceColor', 'm', 'BarWidth', 1);
-    set(MA2013_bar, 'FaceAlpha', 0.2);
-    OH2013_bar = bar(aasm2013_event(4, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OH2013_bar, 'FaceAlpha', 0.2);
-    CH2013_bar = bar(aasm2013_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
-    set(CH2013_bar, 'FaceAlpha', 0.2);
-    MH2013_bar = bar(aasm2013_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
-    set(MH2013_bar, 'FaceAlpha', 0.2);
 
     OA2020_bar = bar(aasm2020_event(1, :)*-2, 'FaceColor', 'r', 'BarWidth', 1);
     set(OA2020_bar, 'FaceAlpha', 0.2);
@@ -429,18 +453,6 @@ for i = 1 : filesNumber
     figure();
     plot(second_matrix(2, :)); hold on; grid on;
     plot(downsample(therm, 25));
-    OA2013_bar = bar(aasm2013_event(1, :)*-1, 'FaceColor', 'r', 'BarWidth', 1);
-    set(OA2013_bar, 'FaceAlpha', 0.2);
-    CA2013_bar = bar(aasm2013_event(2, :)*-1, 'FaceColor', 'g', 'BarWidth', 1);
-    set(CA2013_bar, 'FaceAlpha', 0.2);
-    MA2013_bar = bar(aasm2013_event(3, :)*-1, 'FaceColor', 'm', 'BarWidth', 1);
-    set(MA2013_bar, 'FaceAlpha', 0.2);
-    OH2013_bar = bar(aasm2013_event(4, :)*-1, 'FaceColor', 'b', 'BarWidth', 1);
-    set(OH2013_bar, 'FaceAlpha', 0.2);
-    CH2013_bar = bar(aasm2013_event(5, :)*-1, 'FaceColor', 'c', 'BarWidth', 1);
-    set(CH2013_bar, 'FaceAlpha', 0.2);
-    MH2013_bar = bar(aasm2013_event(6, :)*-1, 'FaceColor', 'k', 'BarWidth', 1);
-    set(MH2013_bar, 'FaceAlpha', 0.2);
 
     OA2020_bar = bar(aasm2020_event(1, :)*-2, 'FaceColor', 'r', 'BarWidth', 1);
     set(OA2020_bar, 'FaceAlpha', 0.2);
