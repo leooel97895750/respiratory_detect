@@ -118,7 +118,6 @@ for i = 1 : filesNumber
     %% Apnea (therm下降90%且大於10秒)
     s_therm = second_matrix(2, :);
     
-
     % Artifact檢查 大於120s無呼吸 threshold 0.3
     no_breath = 0;
     for j = 1:length(s_therm)
@@ -152,7 +151,6 @@ for i = 1 : filesNumber
                         if no_breath >= 10
                             detect_matrix(2, j+imin-1:j+imin-1+no_breath) = 1;
                         end
-                        no_breath = 0;
                         break;
                     end
                 end
