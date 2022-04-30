@@ -3,12 +3,12 @@ clear;
 close all;
 
 % 載入所有要偵測的檔案(.mat)位置
-InputDir = '.\workshop0606data\rawdata\';
+InputDir = '.\2022data\data\';
 files = dir([InputDir '*.mat']); %load all .mat files in the folder
 % 載入標準答案(.csv)的位置
-goldenDir = '.\workshop0606data\workshop_golden_event.csv';
+goldenDir = '.\2022data\answer\';
 % 匯出偵測結果(.csv)的位置
-OutputDir = '.\workshop0606data\result\';
+OutputDir = '.\2022data\result\';
 
 h = waitbar(0,'Please wait...');
 filesNumber = length(files);
@@ -39,18 +39,50 @@ for i = 1 : filesNumber
     spo2 = spo2(1:epoch*30);
    
     %% 載入標準答案 (以判讀網頁event為格式，睡眠中心event則不適用，需經過轉換)
-    % OA、CA、MA、OH、CH、MH、SpO2、Arousal
-    golden_event = zeros(7, epoch*30);
-    golden_event_table = readtable(goldenDir);
-    for j = 1:height(golden_event_table)
-        if string(golden_event_table(j, 1).Var1) == "Obstructive Apnea"
-            aasm2020_event(1, round(golden_event_table(j, 2).Var2) : round(golden_event_table(j, 2).Var2 + golden_event_table(j, 3).Var3)) = 1;
-        elseif string(golden_event_table(j, 1).Var1) == "Obstructive Hypopnea"
-            aasm2020_event(4, round(golden_event_table(j, 2).Var2) : round(golden_event_table(j, 2).Var2 + golden_event_table(j, 3).Var3)) = 1;
-        elseif string(golden_event_table(j, 1).Var1) == "SpO2 Desat"
-            aasm2020_event(7, round(golden_event_table(j, 2).Var2) : round(golden_event_table(j, 2).Var2 + golden_event_table(j, 3).Var3)) = 1;
-        elseif string(golden_event_table(j, 1).Var1) == "ARO SPONT"
-            aasm2020_event(8, round(golden_event_table(j, 2).Var2) : round(golden_event_table(j, 2).Var2 + golden_event_table(j, 3).Var3)) = 1;
+    % OA、CA、MA、OH、CH、MH、SpO2、SpO2_Artifact、Arousal_res、Arousal_limb、Arousal_spont、Arousal_plm
+    golden_event = zeros(12, epoch*30);
+    golden_file = [goldenDir, files(i).name(1:end-4), '.xlsx'];
+    [fileType, sheets] = xlsfinfo(golden_file);
+    % eventid、second、duration、para1、para2、para3、man_scored
+    golden_data = xlsread(golden_file, string(sheets(1)));
+    
+    for j = 1:height(golden_data)
+        % OA
+        if golden_data(j, 1) == 2 && golden_data(j, 7) == 1
+            golden_event(1, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % CA
+        elseif golden_data(j, 1) == 1 && golden_data(j, 7) == 1
+            golden_event(2, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % MA
+        elseif golden_data(j, 1) == 3 && golden_data(j, 7) == 1
+            golden_event(3, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % OH
+        elseif golden_data(j, 1) == 29 && golden_data(j, 7) == 1
+            golden_event(4, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % CH
+        elseif golden_data(j, 1) == 30 && golden_data(j, 7) == 1
+            golden_event(5, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % MH
+        elseif golden_data(j, 1) == 31 && golden_data(j, 7) == 1
+            golden_event(6, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % SpO2 Desat
+        elseif golden_data(j, 1) == 4
+            golden_event(7, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % SpO2 Artifact
+        elseif golden_data(j, 1) == 6 && golden_data(j, 7) == 1
+            golden_event(8, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % Arousal_res
+        elseif golden_data(j, 1) == 7 && golden_data(j, 7) == 1
+            golden_event(9, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % Arousal_limb
+        elseif golden_data(j, 1) == 8 && golden_data(j, 7) == 1
+            golden_event(10, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % Arousal_spont
+        elseif golden_data(j, 1) == 9 && golden_data(j, 7) == 1
+            golden_event(11, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % Arousal_plm
+        elseif golden_data(j, 1) == 10 && golden_data(j, 7) == 1
+            golden_event(12, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         end
     end
     
