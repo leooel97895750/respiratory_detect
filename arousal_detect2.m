@@ -1,19 +1,22 @@
 clear;
 close all;
 
-% InputDir = '.\2022data\';
-InputDir = '.\workshop0606data\rawdata\';
-%OutputDir = '.\2022data\';
-files = dir([InputDir '*.mat']); %load all .mat files in the folder
+InputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022data\';
+goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
+files = dir([InputDir '*.mat']);
 
 %%
 h = waitbar(0,'Please wait...');
 filesNumber = length(files);
 
+sen_list = [];
+pre_list = [];
+
 for i = 1 : filesNumber
 
-    close all;
-    fprintf('file(%d/%d): %s is loaded.\n',i,filesNumber,files(i).name(1:end-4));
+    clearvars -except sen_list pre_list InputDir goldenDir files filesNumber h i
+    close all
+    fprintf('file(%d/%d): %s is loaded.\n', i, filesNumber, files(i).name(1:end-4));
     
     %% channels
     % 分析訊號 注意channels到底對不對
@@ -26,21 +29,37 @@ for i = 1 : filesNumber
     epoch = floor((width(exg) / fs) / 30);
 
     %% 標準答案
-    stage = readtable('.\workshop0606data\stage\stage.csv');
-    stage = stage.Var1;
-    aasm2020 = readtable('.\workshop0606data\ncku_golden_event.csv');
-%     aasm2020 = readtable('.\2022data\20191018_徐O文_2020aasm.csv');
-    arousal2020 = zeros(1, epoch*30);
-    for j = 1:height(aasm2020)
-        if string(aasm2020(j, 1).Var1) == "ARO SPONT"
-            arousal2020(1, round(aasm2020(j, 2).Var2) : round(aasm2020(j, 2).Var2 + aasm2020(j, 3).Var3)) = 1;
+    %stage = readtable('.\workshop0606data\stage\stage.csv');
+    %stage = stage.Var1;
+    %% 載入標準答案 (以判讀網頁event為格式，睡眠中心event則不適用，需經過轉換)
+    % OA、CA、MA、OH、CH、MH、SpO2、SpO2_Artifact、Arousal_res、Arousal_limb、Arousal_spont、Arousal_plm
+    golden_event = zeros(12, epoch*30);
+    golden_file = [goldenDir, files(i).name(1:end-4), '.xlsx'];
+    [fileType, sheets] = xlsfinfo(golden_file);
+    % eventid、second、duration、para1、para2、para3、man_scored
+    golden_data = xlsread(golden_file, string(sheets(1)));
+    
+    for j = 1:height(golden_data)
+        % Arousal_res
+        if golden_data(j, 1) == 7 && golden_data(j, 7) == 1
+            golden_event(9, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % Arousal_limb
+        elseif golden_data(j, 1) == 8 && golden_data(j, 7) == 1
+            golden_event(10, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % Arousal_spont
+        elseif golden_data(j, 1) == 9 && golden_data(j, 7) == 1
+            golden_event(11, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
+        % Arousal_plm
+        elseif golden_data(j, 1) == 10 && golden_data(j, 7) == 1
+            golden_event(12, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         end
     end
+    arousal2020 = golden_event(9, :) | golden_event(10, :) | golden_event(11, :) | golden_event(12, :);
     
     %% 分析
     % stft 一秒一次不重疊
-    window = fs * 1;
-    overlap = 0;
+    window = fs * 2;
+    overlap = 200;
     nfft = 2^nextpow2(window);
     for j = 1:6
         [s(j,:,:), f, t] = spectrogram(exg(j, :), window, overlap, nfft, fs);
@@ -193,17 +212,17 @@ for i = 1 : filesNumber
             end
         end
     end
-    figure();
-    hold on; grid on;
-    plot(emg_amp, 'DisplayName', 'amplitude');
-    plot(tplot, 'DisplayName', 'threshold');
-    band_bar = bar(emg_amp_change*500, 'FaceColor', 'b', 'BarWidth', 1, 'DisplayName', 'arousal detect');
-    set(band_bar, 'FaceAlpha', 0.4);
-    arousal_bar = bar(arousal2020*500, 'FaceColor', 'r', 'BarWidth', 1, 'DisplayName', 'arousal answer');
-    set(arousal_bar, 'FaceAlpha', 0.4);
-    ylabel("Amplitude");
-    xlabel("Time (s)");
-    title("EMG震幅變化偵測");
+%     figure();
+%     hold on; grid on;
+%     plot(emg_amp, 'DisplayName', 'amplitude');
+%     plot(tplot, 'DisplayName', 'threshold');
+%     band_bar = bar(emg_amp_change*500, 'FaceColor', 'b', 'BarWidth', 1, 'DisplayName', 'arousal detect');
+%     set(band_bar, 'FaceAlpha', 0.4);
+%     arousal_bar = bar(arousal2020*500, 'FaceColor', 'r', 'BarWidth', 1, 'DisplayName', 'arousal answer');
+%     set(arousal_bar, 'FaceAlpha', 0.4);
+%     ylabel("Amplitude");
+%     xlabel("Time (s)");
+%     title("EMG震幅變化偵測");
 
     %% Arousal偵測 ver2
     % 將5個band整合，計算每秒下有delta、theta、alpha、beta、gamma分別在不同channels出現幾次(不計算出現abnormal的channel)
@@ -291,6 +310,7 @@ for i = 1 : filesNumber
     count = 0;
     es = 0;
     ee = 0;
+
     for j = 1:length(arousal2020)
         if (arousal2020(j) == 1) && (count == 0)
             es = j;
@@ -322,6 +342,8 @@ for i = 1 : filesNumber
     % Precision(TP/(TP+FP)) 檢測的準確性
     sensitivity = tp / (tp+fn);
     precision = tp / (tp+fp);
+    sen_list(end+1) = sensitivity;
+    pre_list(end+1) = precision;
     disp("sensitivity: "+string(sensitivity)+" precision: "+string(precision));
     
     %% 畫bands偵測圖
