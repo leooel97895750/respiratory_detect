@@ -2,17 +2,14 @@ clear;
 close all;
 
 InputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022data\';
-OutputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature\';
+OutputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
 files = dir([InputDir '*.mat']);
 
 %%
-h = waitbar(0,'Please wait...');
 filesNumber = length(files);
 
-for i = 1 : filesNumber
+parfor i = 1 : filesNumber
 
-    clearvars -except InputDir OutputDir files filesNumber h i
-    close all
     fprintf('file(%d/%d): %s is loaded.\n', i, filesNumber, files(i).name(1:end-4));
     
     %% channels
@@ -50,6 +47,8 @@ for i = 1 : filesNumber
         end
     end
 
+    s = [];
+
     % exg_amplitude 計算每2秒最大最小值相減 overlap 1秒
     exg_amplitude = zeros(9, epoch*30);
     % exg_energy
@@ -69,7 +68,7 @@ for i = 1 : filesNumber
     for b = 1:5
         for c = 1:9
             % 10秒為一組，檢查第11秒的值有無突然的上升
-            for k = 11:epoch*30-30
+            for k = 11:epoch*30-40
                 segment = [];
                 if k > 30 
                     count = 0;
@@ -87,22 +86,21 @@ for i = 1 : filesNumber
                 end
                 
                 % 4倍標準差
-                threshold = mean(segment) + std(segment)*3.5;
+                threshold = mean(segment) + std(segment)*4;
                 % 檢查第11秒
                 if band(b, c, k) > threshold
                     % 往後檢查有幾秒持續大於threshold
-                    % 若大於20秒則不算
+                    % 若大於30秒則不算
                     count = 0;
-                    for j = 1:30
+                    for j = 1:40
                         if band(b, c, k+j) > threshold
                             count = count + 1;
                         else
-                            count = 0;
                             break;
                         end
                     end
                     % 在矩陣中標記
-                    if count <= 20
+                    if count <= 30
                         band_change(b, c, k:k+count) = 1;
                     end
                 end
@@ -115,7 +113,7 @@ for i = 1 : filesNumber
     
     % 10秒為一組，檢查第11秒的值有無突然的上升
     for c = 1:9
-        for k = 11:epoch*30-30
+        for k = 11:epoch*30-40
             segment = [];
             if k > 30 
                 count = 0;
@@ -134,23 +132,22 @@ for i = 1 : filesNumber
             end
             
             % 4倍標準差
-            threshold = mean(segment) + std(segment)*3.5;
+            threshold = mean(segment) + std(segment)*4;
             
             % 檢查第11秒
             if exg_amplitude(c, k) > threshold
                 % 往後檢查有幾秒持續大於threshold
                 % 若大於20秒則不算
                 count = 0;
-                for j = 1:30
+                for j = 1:40
                     if exg_amplitude(c, k+j) > threshold
                         count = count + 1;
                     else
-                        count = 0;
                         break;
                     end
                 end
                 % 在矩陣中標記
-                if count <= 20
+                if count <= 30
                     amplitude_change(c, k:k+count) = 1;
                 end
             end
@@ -162,7 +159,7 @@ for i = 1 : filesNumber
 
     % 10秒為一組，檢查第11秒的值有無突然的上升
     for c = 1:9
-        for k = 11:epoch*30-30
+        for k = 11:epoch*30-40
             segment = [];
             if k > 30 
                 count = 0;
@@ -181,23 +178,22 @@ for i = 1 : filesNumber
             end
             
             % 4倍標準差
-            threshold = mean(segment) + std(segment)*3.5;
+            threshold = mean(segment) + std(segment)*4;
             
             % 檢查第11秒
             if exg_energy(c, k) > threshold
                 % 往後檢查有幾秒持續大於threshold
-                % 若大於20秒則不算
+                % 若大於30秒則不算
                 count = 0;
-                for j = 1:30
+                for j = 1:40
                     if exg_energy(c, k+j) > threshold
                         count = count + 1;
                     else
-                        count = 0;
                         break;
                     end
                 end
                 % 在矩陣中標記
-                if count <= 20
+                if count <= 30
                     energy_change(c, k:k+count) = 1;
                 end
             end
@@ -216,6 +212,4 @@ for i = 1 : filesNumber
     ];
     csvwrite([OutputDir, files(i).name(1:end-4), '.csv'], final_output);
 
-    waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
 end
-close(h);
