@@ -1,8 +1,10 @@
 clear;
 close all;
 
+workshop = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\rawdata\';
 InputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022data\';
 OutputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
+workshop_output = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\feature_t4\';
 files = dir([InputDir '*.mat']);
 
 %%

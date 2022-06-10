@@ -1,33 +1,41 @@
 clear;
 close all;
 
+workshop = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\feature_t4\';
 inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
 goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
 predictStageDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022result\result_answer\';
-files = dir([inputDir '*.csv']);
+workshop_golden = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\';
+workshop_stage = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\stage\';
 
-h = waitbar(0,'Please wait...');
-filesNumber = length(files);
 runningNumber = 0;
 
 total_recall = [];
 total_precision = [];
 
+xAHI5 = [60,53,47,48,66,9]; % remove 52 19
+xAHI5_30 = [59,62,56,55,33,37,31];
+xAHI30 = [26,41,11,10,30,36,29]; % remove 8
+xAHI_all = [60,53,47,48,66,9,59,62,56,55,33,37,31,26,41,11,10,30,36,29];
+
+yAHI5 = [3,34,58,63,27,61,44]; 
+yAHI5_30 = [6,50,12,23]; % remove 22 43 15
+yAHI30 = [51,5,42,14,20]; % remove 16 24
+yAHI_all = [3,34,58,63,27,61,44,6,50,12,23,51,5,42,14,20];
+
 %% training 照AHI排序奇偶
 dataX = [];
 dataY = [];
-for i = [39,2,18,19,28,27,21,1,33,31,6,15,12,38,41,8,30,29,5,14,24,7]
+for i = xAHI_all
     runningNumber = runningNumber + 1;
     % 載入feature
-    feature = readtable([inputDir files(i).name]);
-    feature = feature{:, :};
-    
+    feature = load(join([inputDir, string(i), '.csv'], ''));
     epoch = floor(length(feature) / 30);
 
     % 載入標準答案 (以睡眠中心event格式)
     % OA、CA、MA、OH、CH、MH、SpO2、SpO2_Artifact、Arousal_res、Arousal_limb、Arousal_spont、Arousal_plm
     golden_event = zeros(12, epoch*30);
-    golden_file = [goldenDir, files(i).name(1:end-4), '.xlsx'];
+    golden_file = join([goldenDir, string(i), '.xlsx'], '');
     [fileType, sheets] = xlsfinfo(golden_file);
     % eventid、second、duration、para1、para2、para3、man_scored
     golden_data = xlsread(golden_file, string(sheets(1)));
@@ -53,25 +61,23 @@ for i = [39,2,18,19,28,27,21,1,33,31,6,15,12,38,41,8,30,29,5,14,24,7]
     dataX = [dataX, feature];
     dataY = [dataY, arousal2020];
 
-    waitbar(runningNumber/filesNumber,h,strcat('Please wait...',num2str(round(runningNumber/filesNumber*100)),'%'));  
 end
 
-decisionTree = fitctree(dataX', dataY', 'MaxNumSplits', 100);
+decisionTree = fitctree(dataX', dataY', 'MaxNumSplits', 30);
 
 %% testing
-for i = [25,9,4,3,34,44,13,32,37,22,43,17,23,26,11,10,36,16,42,35,20,40]
+for i = yAHI30
 
     runningNumber = runningNumber + 1;
 
     % 載入feature
-    feature = readtable([inputDir files(i).name]);
-    feature = feature{:, :};
+    feature = load(join([inputDir, string(i), '.csv'], ''));
     epoch = floor(length(feature) / 30);
 
     % 載入標準答案 (以睡眠中心event格式)
     % OA、CA、MA、OH、CH、MH、SpO2、SpO2_Artifact、Arousal_res、Arousal_limb、Arousal_spont、Arousal_plm
     golden_event = zeros(12, epoch*30);
-    golden_file = [goldenDir, files(i).name(1:end-4), '.xlsx'];
+    golden_file = join([goldenDir, string(i), '.xlsx'], '');
     [fileType, sheets] = xlsfinfo(golden_file);
     % eventid、second、duration、para1、para2、para3、man_scored
     golden_data = xlsread(golden_file, string(sheets(1)));
@@ -93,6 +99,18 @@ for i = [25,9,4,3,34,44,13,32,37,22,43,17,23,26,11,10,36,16,42,35,20,40]
     end
     golden_event = golden_event(:, 1:epoch*30);
     arousal2020 = golden_event(9, :) | golden_event(10, :) | golden_event(11, :) | golden_event(12, :);
+%     goldenFileName = 'ncku_golden_event';
+%     
+%     arousal2020 = zeros(1, epoch*30);
+%     golden_file = join([workshop_golden, goldenFileName, '.xlsx'], '');
+%     [fileType, sheets] = xlsfinfo(golden_file);
+%     [n, t, r] = xlsread(golden_file, string(sheets(1)));
+%     
+%     for j = 1:height(r)
+%         if string(r(j, 1)) == 'ARO SPONT'
+%             arousal2020(round(n(j, 1)):(round(n(j, 1))+round(n(j, 2)))) = 1;
+%         end
+%     end
 
     arousal = predict(decisionTree, feature');
     arousal = arousal';
@@ -125,9 +143,11 @@ for i = [25,9,4,3,34,44,13,32,37,22,43,17,23,26,11,10,36,16,42,35,20,40]
     end
 
     % 用預測的stage做後處理
-    stage_file = [predictStageDir, files(i).name(1:end-4), '.dat.csv'];
+%     stage_file = join([workshop_stage, 'stage.dat'], '');
+    stage_file = join([predictStageDir, string(i) '.dat.csv'], '');
     stage = load(stage_file);
     pred_stage = stage(:, 4);
+%     pred_stage = stage;
     for j = 1:length(pred_stage)
         if pred_stage(j) == 0 || pred_stage(j) == 3
             if (30+(j-1)*30) < length(arousal)
@@ -177,10 +197,7 @@ for i = [25,9,4,3,34,44,13,32,37,22,43,17,23,26,11,10,36,16,42,35,20,40]
     total_precision(end+1) = precision;
     disp("recall: " + string(recall) + " precision: " + string(precision));
 
-    waitbar(runningNumber/filesNumber,h,strcat('Please wait...',num2str(round(runningNumber/filesNumber*100)),'%'));  
 end
 
 disp("total recall: " + string(mean(total_recall)) + " total precision: " + string(mean(total_precision)));
 view(decisionTree, 'Mode', 'graph');
-
-close(h);

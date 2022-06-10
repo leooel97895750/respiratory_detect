@@ -4,43 +4,24 @@ close all;
 inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
 goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
 predictStageDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022result\result_answer\';
-files = dir([inputDir '*.csv']);
-
-%%
-h = waitbar(0,'Please wait...');
-filesNumber = length(files);
-
-arousal_feature_prob = zeros(filesNumber, 63);
-nonArousal_feature_prob = zeros(filesNumber, 63);
-
-arousal_feature_compose = containers.Map();
 
 recall_list = [];
 precision_list = [];
-
-arousal_count = 0;
-arousal_feature_count = zeros(1, 63);
 
 AHI5 = [60,52,53,47,48,66,9,19,3,34,58,63,27,61,44];
 AHI5_30 = [59,62,56,55,33,37,31,22,6,43,15,50,12,23];
 AHI30 = [26,41,11,8,10,30,36,29,51,16,5,42,14,24,20];
 
-for i = 1 : filesNumber
-
-    %fprintf('file(%d/%d): %s is loaded.\n', i, filesNumber, files(i).name(1:end-4));
-%     if ismember(str2num(files(i).name(1:end-4)), [21,33,22,25,28,31,43,15,2])
-%         continue;
-%     end
+for i = AHI5
 
     % 載入feature
-    feature = readtable([inputDir files(i).name]);
-    feature = feature{:, :};
+    feature = load(join([inputDir, string(i), '.csv'], ''));
     epoch = floor(length(feature) / 30);
 
     % 載入標準答案 (以睡眠中心event格式)
     % OA、CA、MA、OH、CH、MH、SpO2、SpO2_Artifact、Arousal_res、Arousal_limb、Arousal_spont、Arousal_plm
     golden_event = zeros(12, epoch*30);
-    golden_file = [goldenDir, files(i).name(1:end-4), '.xlsx'];
+    golden_file = join([goldenDir, string(i), '.xlsx'], '');
     [fileType, sheets] = xlsfinfo(golden_file);
     % eventid、second、duration、para1、para2、para3、man_scored
     golden_data = xlsread(golden_file, string(sheets(1)));
@@ -67,9 +48,7 @@ for i = 1 : filesNumber
 
     %% 觀察特徵在arousal時的組合
 
-
     %% 觀察特徵在arousal時出現的機率
-
 
     %% Arousal偵測 Ver.3 可能要結合stage判讀，可以剃除wake跟n3的特徵變化
     arousal = zeros(2, epoch*30-1);
@@ -148,7 +127,7 @@ for i = 1 : filesNumber
 
 
     % 用預測的stage做後處理
-    stage_file = [predictStageDir, files(i).name(1:end-4), '.dat.csv'];
+    stage_file = join([predictStageDir, string(i) '.dat.csv'], '');
     stage = load(stage_file);
     pred_stage = stage(:, 4);
     for j = 1:length(pred_stage)
@@ -207,14 +186,9 @@ for i = 1 : filesNumber
     precision = tp/(tp+fp);
     recall_list(end+1) = recall;
     precision_list(end+1) = precision;
-    disp(files(i).name + " recall: " + string(recall) + " precision: " + string(precision));
+    disp(string(i) + ".dat recall: " + string(recall) + " precision: " + string(precision));
 
-    waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'));  
 end
 
 disp("average recall: " + string(mean(recall_list)));
 disp("average precision: " + string(mean(precision_list)));
-
-
-
-close(h);
