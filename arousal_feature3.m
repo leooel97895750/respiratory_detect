@@ -3,9 +3,10 @@ close all;
 
 workshop = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\rawdata\';
 InputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022data\';
-OutputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
+OutputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t3\';
 workshop_output = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\feature_t4\';
 files = dir([InputDir '*.mat']);
+t_variable = 3;
 
 %%
 filesNumber = length(files);
@@ -40,7 +41,7 @@ parfor i = 1 : filesNumber
     % band 計算每個能量帶 delta 0.3~4、theta 4~8、alpha 8~13、beta 13~22、gamma 22~35
     band = zeros(5, 9, epoch*30);
     for j = 1:9
-        for k = 1:epoch*30
+        for k = length(t)
             band(1, j, k) = mean(s(j, 2:11, k));
             band(2, j, k) = mean(s(j, 12:22, k));
             band(3, j, k) = mean(s(j, 22:35, k));
@@ -56,7 +57,7 @@ parfor i = 1 : filesNumber
     % exg_energy
     exg_energy = zeros(9, epoch*30);
     for j = 1:height(exg)
-        for k = 1:epoch*30
+        for k = 1:length(t)
             segment = exg(j, (k-1)*fs+1:(k-1)*fs+fs*2);
             exg_amplitude(j, k) = max(segment) - min(segment);
             exg_energy(j, k) = mean(abs(segment));
@@ -87,8 +88,8 @@ parfor i = 1 : filesNumber
                     segment = band(b, c, k-10:k-1);
                 end
                 
-                % 4倍標準差
-                threshold = mean(segment) + std(segment)*4;
+                % ?倍標準差
+                threshold = mean(segment) + std(segment)*t_variable;
                 % 檢查第11秒
                 if band(b, c, k) > threshold
                     % 往後檢查有幾秒持續大於threshold
@@ -133,8 +134,8 @@ parfor i = 1 : filesNumber
                 segment = exg_amplitude(c, k-10:k-1);
             end
             
-            % 4倍標準差
-            threshold = mean(segment) + std(segment)*4;
+            % ?倍標準差
+            threshold = mean(segment) + std(segment)*t_variable;
             
             % 檢查第11秒
             if exg_amplitude(c, k) > threshold
@@ -179,8 +180,8 @@ parfor i = 1 : filesNumber
                 segment = exg_energy(c, k-10:k-1);
             end
             
-            % 4倍標準差
-            threshold = mean(segment) + std(segment)*4;
+            % ?倍標準差
+            threshold = mean(segment) + std(segment)*t_variable;
             
             % 檢查第11秒
             if exg_energy(c, k) > threshold

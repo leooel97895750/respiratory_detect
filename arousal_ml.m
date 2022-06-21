@@ -1,8 +1,8 @@
-clear;
-close all;
+clear
+close all
 
 workshop = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\feature_t4\';
-inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
+inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4.5\';
 goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
 predictStageDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022result\result_answer\';
 workshop_golden = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\';
@@ -10,6 +10,8 @@ workshop_stage = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respira
 
 runningNumber = 0;
 
+total_human_ari = [];
+total_auto_ari = [];
 total_recall = [];
 total_precision = [];
 
@@ -146,6 +148,7 @@ for i = yAHI30
 %     stage_file = join([workshop_stage, 'stage.dat'], '');
     stage_file = join([predictStageDir, string(i) '.dat.csv'], '');
     stage = load(stage_file);
+    human_stage = stage(:, 1);
     pred_stage = stage(:, 4);
 %     pred_stage = stage;
     for j = 1:length(pred_stage)
@@ -155,6 +158,52 @@ for i = yAHI30
             end
         end
     end
+
+    % 計算標準 arousal index
+    spoint = 0;
+    epoint = 0;
+    start = 0;
+    arousal2020_count = 0;
+    for j = 1:length(arousal2020)
+        if (arousal2020(j) == 1) && (start == 0)
+            spoint = j;
+            start = 1;
+        elseif (arousal2020(j) == 0) && (start == 1)
+            epoint = j - 1;
+            start = 0;
+            arousal2020_count = arousal2020_count + 1;
+            if(human_stage(floor(spoint/30)) == 0)
+                arousal2020(spoint:epoint) = 0;
+                arousal2020_count = arousal2020_count - 1;
+            end
+        end
+    end
+    human_ari = arousal2020_count / (sum(human_stage ~= 0) / 120);
+
+    % 計算預測 arousal index
+    spoint = 0;
+    epoint = 0;
+    start = 0;
+    arousal_count = 0;
+    for j = 1:length(arousal)
+        if (arousal(j) == 1) && (start == 0)
+            spoint = j;
+            start = 1;
+        elseif (arousal(j) == 0) && (start == 1)
+            epoint = j - 1;
+            start = 0;
+            arousal_count = arousal_count + 1;
+            if(human_stage(floor(spoint/30)) == 0)
+                arousal(spoint:epoint) = 0;
+                arousal_count = arousal_count - 1;
+            end
+        end
+    end
+    auto_ari = arousal_count / (sum(pred_stage ~= 0) / 120);
+
+    total_human_ari(end+1) = human_ari;
+    total_auto_ari(end+1) = auto_ari;
+    disp("標準ArI: " + human_ari + " 偵測ArI: " + auto_ari + " 差異: " + string(abs(human_ari - auto_ari)));
 
     % 計算 recall precision
     tp = 0;
@@ -199,5 +248,6 @@ for i = yAHI30
 
 end
 
-disp("total recall: " + string(mean(total_recall)) + " total precision: " + string(mean(total_precision)));
-view(decisionTree, 'Mode', 'graph');
+ari_diff = mean(abs(total_human_ari - total_auto_ari));
+disp("total recall: " + string(mean(total_recall)) + " total precision: " + string(mean(total_precision)) + " ari diff: " + string(ari_diff));
+% view(decisionTree, 'Mode', 'graph');
