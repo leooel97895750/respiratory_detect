@@ -7,6 +7,7 @@ goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scorin
 predictStageDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022result\result_answer\';
 workshop_golden = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\';
 workshop_stage = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\stage\';
+outputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022arousal\';
 
 runningNumber = 0;
 
@@ -175,10 +176,10 @@ for i = yAHI_all
             epoint = j - 1;
             start = 0;
             arousal2020_count = arousal2020_count + 1;
-            if(human_stage(ceil(spoint/30)) == 0)
-                arousal2020(spoint:epoint) = 0;
-                arousal2020_count = arousal2020_count - 1;
-            end
+%             if(human_stage(ceil(spoint/30)) == 0)
+%                 arousal2020(spoint:epoint) = 0;
+%                 arousal2020_count = arousal2020_count - 1;
+%             end
         end
     end
     human_ari = arousal2020_count / (sum(human_stage ~= 0) / 120);
@@ -249,6 +250,8 @@ for i = yAHI_all
     total_recall(end+1) = recall;
     total_precision(end+1) = precision;
     disp("file " + string(i) + "    recall: " + string(recall) + " precision: " + string(precision));
+
+    csvwrite(join([outputDir, string(i), '.csv'], ''), arousal);
 
 end
 

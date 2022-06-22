@@ -3,23 +3,40 @@ clear;
 close all;
 
 % 載入所有要偵測的檔案(.mat)位置
-InputDir = '.\2022data\data\';
+InputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022data\';
 files = dir([InputDir '*.mat']); %load all .mat files in the folder
 % 載入標準答案(.csv)的位置
-goldenDir = '.\2022data\answer\';
-% 匯出偵測結果(.csv)的位置
-OutputDir = '.\2022data\result\';
+goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
 
-h = waitbar(0,'Please wait...');
+apnea_recall = [];
+apnea_precision = [];
+hypopnea_recall = [];
+hypopnea_precision = [];
+spo2_recall = [];
+spo2_precision = [];
+
+% AHI奇數
+xAHI_all = [39,102,52,47,105,103,2,9,4,3,28,34,69,65,27,78,81,...
+            44,113,1,62,108,32,75,33,37,67,117,6,43,89,15,97,71,...
+            17,12,85,49,38,79,86,94,41,11,80,10,30,29,107,109,...
+            16,5,91,35,20,95,92,70,74,93];
+
+% AHI偶數
+yAHI_all = [60,96,53,76,48,25,66,18,19,114,45,58,104,63,61,115,72,...
+            21,13,59,98,56,100,55,73,31,22,99,110,111,87,50,106,...
+            84,82,23,64,77,83,119,57,26,90,118,8,116,36,88,51,112,...
+            46,42,14,24,120,7,54,40,101,68];
+
+%h = waitbar(0,'Please wait...');
 filesNumber = length(files);
-for i = 1 : filesNumber
-    close all;
-    fprintf('file(%d/%d): %s is loaded.\n', i, filesNumber, files(i).name(1:end-4));
+for i = xAHI_all
+
+    fprintf('file(%d/%d)\n', i, filesNumber);
     
     %% channel 12:NPress 13:Therm 14:Thor 15:Abdo 16:SpO2
 
     % 分析訊號 注意channels到底對不對
-    data = load(fullfile(files(i).folder,files(i).name));
+    data = load(join([InputDir, string(i), '.mat'], ''));
     fs = 200; %睡眠中心 sample rate
     data = data.data;
 
@@ -38,10 +55,10 @@ for i = 1 : filesNumber
     spo2 = data(16, :);
     spo2 = spo2(1:epoch*30);
    
-    %% 載入標準答案 (以判讀網頁event為格式，睡眠中心event則不適用，需經過轉換)
+    % 載入標準答案 (以睡眠中心event格式)
     % OA、CA、MA、OH、CH、MH、SpO2、SpO2_Artifact、Arousal_res、Arousal_limb、Arousal_spont、Arousal_plm
     golden_event = zeros(12, epoch*30);
-    golden_file = [goldenDir, files(i).name(1:end-4), '.xlsx'];
+    golden_file = join([goldenDir, string(i), '.xlsx'], '');
     [fileType, sheets] = xlsfinfo(golden_file);
     % eventid、second、duration、para1、para2、para3、man_scored
     golden_data = xlsread(golden_file, string(sheets(1)));
@@ -85,222 +102,12 @@ for i = 1 : filesNumber
             golden_event(12, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         end
     end
+    golden_event = golden_event(:, 1:epoch*30);
     
-    %% Arousal分析
-    % stft 一秒一次不重疊
-    window = fs * 1;
-    overlap = 0;
-    nfft = 2^nextpow2(window);
-    for j = 1:6
-        [s(j,:,:), f, t] = spectrogram(exg(j, :), window, overlap, nfft, fs);
-    end
-    % s為能量強度
-    s = abs(s);
-    s = (s ./ max(reshape(s, [], 1))) .*100;
-    
-    % 計算每個能量帶
-    % delta 0.5~4、theta 4~8、alpha 8~13、lbeta 13~28、gamma 28~50
-    band = zeros(5, 6, epoch*30);
-    for j = 1:6
-        for k = 1:epoch*30
-            band(1, j, k) = mean(s(j, 2:6, k));
-            band(2, j, k) = mean(s(j, 6:11, k));
-            band(3, j, k) = mean(s(j, 11:18, k));
-            band(4, j, k) = mean(s(j, 18:37, k));
-            band(5, j, k) = mean(s(j, 37:65, k));
-        end
-    end
-
-    % 計算每2秒震幅大小 overlap 1秒 才能抓到delta wave?
-    exg_amplitude = zeros(9, epoch*30);
-    for j = 1:height(exg)
-        for k = 1:epoch*30
-            segment = exg(j, (k-1)*fs+1:(k-1)*fs+fs*2);
-            exg_amplitude(j,k) = max(segment) - min(segment);
-        end
-    end
-
-    % 定義訊號異常矩陣 超過threshold視為abnormal
-    threshold = 300; % for eeg 還要再細分
-    exg_abnormal = zeros(9, epoch*30);
-    for j = 1:height(exg_amplitude)
-        for k = 1:epoch*30
-            if exg_amplitude(j, k) >= threshold
-                exg_abnormal(j, k) = 1;
-            end
-        end
-    end
-    
-    %% 頻率變化偵測
-    band_change = zeros(5, 6, epoch*30);
-    for b = 1:5
-        % 畫圖用
-        %tplot = zeros(6, epoch*30);
-        for c = 1:6
-            % 10秒為一組，檢查第11秒的值有無突然的上升
-            for k = 11:epoch*30-30
-                segment = [];
-                if k > 30 
-                    count = 0;
-                    for j = 1:30
-                        if band_change(b, c, k-j) == 0
-                            segment(end+1) = band(b, c , k-j);
-                            count = count + 1;
-                        end
-                        if count == 10 
-                            break;
-                        end
-                    end
-                else
-                    segment = band(b, c, k-10:k-1);
-                end
-                
-                % 4倍標準差
-                threshold = mean(segment) + std(segment)*4;
-                %tplot(c, k) = threshold;
-                % 檢查第11秒
-                if band(b, c, k) > threshold
-                    % 往後檢查有幾秒持續大於threshold，若大於20秒則不算
-                    count = 0;
-                    for j = 1:30
-                        if band(b, c, k+j) > threshold
-                            count = count + 1;
-                        else
-                            count = 0;
-                            break;
-                        end
-                    end
-                    % 在矩陣中標記
-                    if count <= 20
-                        band_change(b, c, k:k+count) = 1;
-                    end
-                end
-            end
-        end
-    end
-    
-    %% EMG震幅變化偵測
-    emg_amp_change = zeros(1, epoch*30);
-    emg_amp = exg_amplitude(9, :);
-    % 畫圖用
-    %tplot = zeros(epoch*30, 1);
-    for k = 11:epoch*30-30
-        segment = [];
-        if k > 30 
-            count = 0;
-            for j = 1:30
-                if emg_amp_change(k-j) == 0
-                    segment(end+1) = emg_amp(k-j);
-                    count = count + 1;
-                end
-                if count == 10 
-                    break;
-                end
-            end
-        else
-            segment = emg_amp(k-10:k-1);
-        end
-        
-        % 4倍標準差
-        threshold = mean(segment) + std(segment)*4;
-        %tplot(k) = threshold;
-        % 檢查第11秒
-        if emg_amp(k) > threshold
-            % 往後檢查有幾秒持續大於threshold
-            % 若大於20秒則不算
-            count = 0;
-            for j = 1:30
-                if emg_amp(k+j) > threshold
-                    count = count + 1;
-                else
-                    count = 0;
-                    break;
-                end
-            end
-            % 在矩陣中標記
-            if count <= 20
-                emg_amp_change(k:k+count) = 1;
-            end
-        end
-    end
-    
-    %% Arousal偵測 ver2
-    % 將5個band整合，計算每秒下有delta、theta、alpha、beta、gamma分別在不同channels出現幾次(不計算出現abnormal的channel)
-    arousal_bandsum = zeros(5, epoch*30);
-    for b = 1:5
-        for c = 1:6
-            for j = 1:epoch*30
-                if exg_abnormal(c,j) ~= 1 && band_change(b, c, j) == 1
-                    arousal_bandsum(b, j) = arousal_bandsum(b, j) + 1;
-                end
-            end
-        end
-    end
-
-    % 制定納入arousal的規則條件
-    arousal_possible = arousal_bandsum;
-    % 2 channels以上有同樣特徵才視為Arousal
-    arousal_possible(arousal_possible <= 2) = 0;
-    % 模糊化alpha、beta、gamma 因Arousal特性向後模糊1秒、3秒、3秒
-    fuzzy_alpha = arousal_possible(3, :);
-    fuzzy_beta = arousal_possible(4, :);
-    fuzzy_gamma = arousal_possible(5, :);
-    for j = 1:epoch*30-2
-        if (arousal_possible(3, j) ~= 0) && (arousal_possible(3, j+1) == 0)
-            fuzzy_alpha(j+1) = arousal_possible(3, j);
-        end
-        if (arousal_possible(4, j) ~= 0) && (arousal_possible(3, j+1) == 0)
-            fuzzy_beta(j+1:j+3) = arousal_possible(4, j);
-        end
-        if (arousal_possible(5, j) ~= 0) && (arousal_possible(3, j+1) == 0)
-            fuzzy_gamma(j+1:j+3) = arousal_possible(5, j);
-        end
-    end
-    arousal_possible(3, :) = fuzzy_alpha;
-    arousal_possible(4, :) = fuzzy_beta;
-    arousal_possible(5, :) = fuzzy_gamma;
-    
-    % 最終的Arousal偵測結果，之後會加入判斷依據的參數
-    arousal_detect = zeros(1, epoch*30);
-    % 直接將目前有數值的band合併視為Arousal
-    % 直接將EMG納入
-    for j = 1:epoch*30
-        if emg_amp_change(j) == 1
-            % theta、alpha、beta、gamma
-            if sum(arousal_possible(2:5, j)) >= 2
-                arousal_detect(j) = 1;
-            end
-        end
-    end
-
-    % 檢查大於3秒小於15秒
-    count = 0;
-    for j = 1:epoch*30
-        % 計算連續次數
-        if arousal_detect(j) == 1
-            count = count + 1;
-        % 當連續結束則計算秒數
-        else
-            % 超出時間範圍則刪除
-            if (count ~= 0) && (count < 3)
-                arousal_detect(j-count:j-1) = 0;
-            end
-            count = 0;
-        end
-    end
-
-    % 加入全部channels的abnormal區段
-    for j = 1:epoch*30
-        if sum(exg_abnormal(1:9, j)) >= 7
-            arousal_detect(j) = 1;
-        end
-    end
-    
-    %% 進入呼吸事件環節
     
     % filter lowpass 先不要過filter好了，因為看起來影響不大，而且過filter訊號會平移，時間點要對齊
-    %npress = lowpass(npress, 2, 25);
-    %therm = lowpass(therm, 2, 25);
+    % npress = lowpass(npress, 2, 25);
+    % therm = lowpass(therm, 2, 25);
     
     %% find peaks
 
@@ -369,7 +176,7 @@ for i = 1 : filesNumber
     % 連續檢查30s有無下降90%且最小值小於 threshold 1
     windows = 30;
     threshold = 1;
-    for j = 1:length(s_therm)-windows
+    for j = 1:length(s_therm)-180
         % 無artifact且尚未經過Apnea檢查
         if detect_matrix(1, j) ~= 1 && detect_matrix(2, j) ~= 1
             [lmax, imax] = max(s_therm(j:j+windows));
@@ -488,17 +295,147 @@ for i = 1 : filesNumber
                 detect_matrix(4, j-count:j-1) = 0;
             end
             % 檢查範圍前後10秒有無arousal、spo2 desat
-            if (sum(arousal_detect(j-10:j+10)) == 0) && (sum(detect_matrix(6, j-10:j+10)) == 0)
-                detect_matrix(4, j-count:j-1) = 0;
-            end
+%             if (sum(arousal_detect(j-10:j+10)) == 0) && (sum(detect_matrix(6, j-10:j+10)) == 0)
+%                 detect_matrix(4, j-count:j-1) = 0;
+%             end
             count = 0;
         end
     end
     
-    %% 儲存偵測結果 (每秒矩陣csv)
-    combine_matrix = [detect_matrix; arousal_detect];
-    csvwrite([OutputDir, files(i).name(1:end-4), '.csv'], combine_matrix);
+    % 計算 apnea recall precision
+    my_apena = detect_matrix(2, :);
+    apnea2020 = golden_event(1, :) | golden_event(2, :) | golden_event(3, :);
+
+    tp = 0;
+    fn = 0;
+    fp = 0;
     
-    waitbar(i/filesNumber,h,strcat('Please wait...',num2str(round(i/filesNumber*100)),'%'))    
+    cont = 0;
+    es = 0;
+    ee = 0;
+    for j = 1:length(apnea2020)
+        if (apnea2020(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (apnea2020(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(my_apena(es:ee)) > 0
+                tp = tp + 1;
+            else
+                fn = fn + 1;
+            end
+        end
+    end
+    for j = 1:length(my_apena)
+        if (my_apena(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (my_apena(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(apnea2020(es:ee)) == 0
+                fp = fp + 1;
+            end
+        end
+    end
+
+    recall = tp/(tp+fn);
+    precision = tp/(tp+fp);
+    apnea_recall(end+1) = recall;
+    apnea_precision(end+1) = precision;
+    disp("file " + string(i) + "  Apnea  recall: " + string(recall) + " precision: " + string(precision));
+
+    % 計算 hypopnea recall precision
+    my_hypopnea = detect_matrix(4, :);
+    hypopnea2020 = golden_event(4, :) | golden_event(5, :) | golden_event(5, :);
+
+    tp = 0;
+    fn = 0;
+    fp = 0;
+    
+    cont = 0;
+    es = 0;
+    ee = 0;
+    for j = 1:length(hypopnea2020)
+        if (hypopnea2020(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (hypopnea2020(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(my_hypopnea(es:ee)) > 0
+                tp = tp + 1;
+            else
+                fn = fn + 1;
+            end
+        end
+    end
+    for j = 1:length(my_hypopnea)
+        if (my_hypopnea(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (my_hypopnea(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(hypopnea2020(es:ee)) == 0
+                fp = fp + 1;
+            end
+        end
+    end
+
+    recall = tp/(tp+fn);
+    precision = tp/(tp+fp);
+    hypopnea_recall(end+1) = recall;
+    hypopnea_precision(end+1) = precision;
+    disp("file " + string(i) + "  Hypopnea  recall: " + string(recall) + " precision: " + string(precision));
+
+    % 計算 spo2 recall precision
+    my_spo2 = detect_matrix(6, :);
+    spo22020 = golden_event(7, :);
+
+    tp = 0;
+    fn = 0;
+    fp = 0;
+    
+    cont = 0;
+    es = 0;
+    ee = 0;
+    for j = 1:length(spo22020)
+        if (spo22020(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (spo22020(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(my_spo2(es:ee)) > 0
+                tp = tp + 1;
+            else
+                fn = fn + 1;
+            end
+        end
+    end
+    for j = 1:length(my_spo2)
+        if (my_spo2(j) == 1) && (cont == 0)
+            es = j;
+            cont = 1;
+        elseif (my_spo2(j) == 0) && (cont == 1)
+            ee = j - 1;
+            cont = 0;
+            if sum(spo22020(es:ee)) == 0
+                fp = fp + 1;
+            end
+        end
+    end
+
+    recall = tp/(tp+fn);
+    precision = tp/(tp+fp);
+    spo2_recall(end+1) = recall;
+    spo2_precision(end+1) = precision;
+    disp("file " + string(i) + "  SpO2  recall: " + string(recall) + " precision: " + string(precision));
+
 end
-close(h);
+
+disp("total Apnea recall: " + string(mean(apnea_recall)) + " total Apnea precision: " + string(mean(apnea_precision)));
+disp("total Hypopnea recall: " + string(mean(hypopnea_recall)) + " total Hypopnea precision: " + string(mean(hypopnea_precision)));
+disp("total SpO2 recall: " + string(mean(spo2_recall)) + " total SpO2 precision: " + string(mean(spo2_precision)));
