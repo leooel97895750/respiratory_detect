@@ -214,6 +214,6 @@ parfor i = 1 : filesNumber
         amplitude_change;...
         energy_change;...
     ];
-    csvwrite([OutputDir, string(i), '.csv'], final_output);
+    csvwrite(join([OutputDir, string(i), '.csv'], ''), final_output);
 
 end

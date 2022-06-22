@@ -3,21 +3,22 @@ close all;
 
 workshop = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\rawdata\';
 InputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022data\';
-OutputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4.1\';
+OutputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t5.5\';
 workshop_output = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\feature_t4\';
 files = dir([InputDir '*.mat']);
-t_variable = 4.1;
+t_variable = 5.5;
 
 %%
 filesNumber = length(files);
 
 parfor i = 1 : filesNumber
 
-    fprintf('file(%d/%d): %s is loaded.\n', i, filesNumber, files(i).name(1:end-4));
+    fprintf('file(%d/%d)\n', i, filesNumber);
     
     %% channels
     % 分析訊號 注意channels到底對不對
-    data = load(fullfile(files(i).folder,files(i).name)); %load .mat files in the folder
+    data = load(join([InputDir, string(i), '.mat'], ''));
+    
     fs = 200; %睡眠中心 sample rate 200 社科院 sample rate 512
     data = data.data;
     
@@ -41,7 +42,7 @@ parfor i = 1 : filesNumber
     % band 計算每個能量帶 delta 0.3~4、theta 4~8、alpha 8~13、beta 13~22、gamma 22~35
     band = zeros(5, 9, epoch*30);
     for j = 1:9
-        for k = 1:epoch*30
+        for k = 1:length(t)
             band(1, j, k) = mean(s(j, 2:11, k));
             band(2, j, k) = mean(s(j, 12:22, k));
             band(3, j, k) = mean(s(j, 22:35, k));
@@ -57,7 +58,7 @@ parfor i = 1 : filesNumber
     % exg_energy
     exg_energy = zeros(9, epoch*30);
     for j = 1:height(exg)
-        for k = 1:epoch*30
+        for k = 1:length(t)
             segment = exg(j, (k-1)*fs+1:(k-1)*fs+fs*2);
             exg_amplitude(j, k) = max(segment) - min(segment);
             exg_energy(j, k) = mean(abs(segment));
@@ -213,6 +214,6 @@ parfor i = 1 : filesNumber
         amplitude_change;...
         energy_change;...
     ];
-    csvwrite([OutputDir, files(i).name(1:end-4), '.csv'], final_output);
+    csvwrite(join([OutputDir, string(i), '.csv'], ''), final_output);
 
 end

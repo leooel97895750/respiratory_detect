@@ -1,8 +1,8 @@
 clear
 close all
 
-workshop = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\feature_t4\';
-inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4.5\';
+% workshop = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\feature_t4\';
+inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
 goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
 predictStageDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022result\result_answer\';
 workshop_golden = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\workshop0606data\';
@@ -12,18 +12,21 @@ runningNumber = 0;
 
 total_human_ari = [];
 total_auto_ari = [];
+total_diff = [];
 total_recall = [];
 total_precision = [];
 
-xAHI5 = [60,53,47,48,66,9]; % remove 52 19
-xAHI5_30 = [59,62,56,55,33,37,31];
-xAHI30 = [26,41,11,10,30,36,29]; % remove 8
-xAHI_all = [60,53,47,48,66,9,59,62,56,55,33,37,31,26,41,11,10,30,36,29];
+% AHI奇數
+xAHI_all = [39,102,52,47,105,103,2,9,4,3,28,34,69,65,27,78,81,...
+            44,113,1,62,108,32,75,33,37,67,117,6,43,89,15,97,71,...
+            17,12,85,49,38,79,86,94,41,11,80,10,30,29,107,109,...
+            16,5,91,35,20,95,92,70,74,93];
 
-yAHI5 = [3,34,58,63,27,61,44]; 
-yAHI5_30 = [6,50,12,23]; % remove 22 43 15
-yAHI30 = [51,5,42,14,20]; % remove 16 24
-yAHI_all = [3,34,58,63,27,61,44,6,50,12,23,51,5,42,14,20];
+% AHI偶數
+yAHI_all = [60,96,53,76,48,25,66,18,19,114,45,58,104,63,61,115,72,...
+            21,13,59,98,56,100,55,73,31,22,99,110,111,87,50,106,...
+            84,82,23,64,77,83,119,57,26,90,118,8,116,36,88,51,112,...
+            46,42,14,24,120,7,54,40,101,68];
 
 %% training 照AHI排序奇偶
 dataX = [];
@@ -68,7 +71,7 @@ end
 decisionTree = fitctree(dataX', dataY', 'MaxNumSplits', 30);
 
 %% testing
-for i = yAHI30
+for i = yAHI_all
 
     runningNumber = runningNumber + 1;
 
@@ -172,7 +175,7 @@ for i = yAHI30
             epoint = j - 1;
             start = 0;
             arousal2020_count = arousal2020_count + 1;
-            if(human_stage(floor(spoint/30)) == 0)
+            if(human_stage(ceil(spoint/30)) == 0)
                 arousal2020(spoint:epoint) = 0;
                 arousal2020_count = arousal2020_count - 1;
             end
@@ -203,7 +206,8 @@ for i = yAHI30
 
     total_human_ari(end+1) = human_ari;
     total_auto_ari(end+1) = auto_ari;
-    disp("標準ArI: " + human_ari + " 偵測ArI: " + auto_ari + " 差異: " + string(abs(human_ari - auto_ari)));
+    total_diff(end+1) = abs(human_ari - auto_ari);
+    disp("標準ArI: " + human_ari + " 偵測ArI: " + auto_ari + " 差異: " + total_diff(end));
 
     % 計算 recall precision
     tp = 0;
@@ -244,7 +248,7 @@ for i = yAHI30
     precision = tp/(tp+fp);
     total_recall(end+1) = recall;
     total_precision(end+1) = precision;
-    disp("recall: " + string(recall) + " precision: " + string(precision));
+    disp("file " + string(i) + "    recall: " + string(recall) + " precision: " + string(precision));
 
 end
 
