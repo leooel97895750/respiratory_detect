@@ -1,10 +1,10 @@
-% 整合 Arousal 呼吸事件 SpO2 偵測
+
 clear;
 close all;
 
 % 載入所有要偵測的檔案(.mat)位置
 InputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022data\';
-outputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2020respiratory_feature\'
+outputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2020respiratory_feature\';
 files = dir([InputDir '*.mat']); %load all .mat files in the folder
 
 % AHI奇數
