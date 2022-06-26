@@ -32,7 +32,7 @@ yAHI_all = [60,96,53,76,48,25,66,18,19,114,45,58,104,63,61,115,72,...
 %% training 照AHI排序奇偶
 dataX = [];
 dataY = [];
-for i = xAHI_all
+for i = yAHI_all
     runningNumber = runningNumber + 1;
     % 載入feature
     feature = load(join([inputDir, string(i), '.csv'], ''));
@@ -48,16 +48,16 @@ for i = xAHI_all
     
     for j = 1:height(golden_data)
         % Arousal_res
-        if golden_data(j, 1) == 7 && golden_data(j, 7) == 1
+        if golden_data(j, 1) == 7
             golden_event(9, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         % Arousal_limb
-        elseif golden_data(j, 1) == 8 && golden_data(j, 7) == 1
+        elseif golden_data(j, 1) == 8
             golden_event(10, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         % Arousal_spont
-        elseif golden_data(j, 1) == 9 && golden_data(j, 7) == 1
+        elseif golden_data(j, 1) == 9
             golden_event(11, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         % Arousal_plm
-        elseif golden_data(j, 1) == 10 && golden_data(j, 7) == 1
+        elseif golden_data(j, 1) == 10
             golden_event(12, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         end
     end
@@ -72,7 +72,7 @@ end
 decisionTree = fitctree(dataX', dataY', 'MaxNumSplits', 30);
 
 %% testing
-for i = yAHI_all
+for i = xAHI_all
 
     runningNumber = runningNumber + 1;
 
@@ -90,16 +90,16 @@ for i = yAHI_all
     
     for j = 1:height(golden_data)
         % Arousal_res
-        if golden_data(j, 1) == 7 && golden_data(j, 7) == 1
+        if golden_data(j, 1) == 7
             golden_event(9, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         % Arousal_limb
-        elseif golden_data(j, 1) == 8 && golden_data(j, 7) == 1
+        elseif golden_data(j, 1) == 8
             golden_event(10, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         % Arousal_spont
-        elseif golden_data(j, 1) == 9 && golden_data(j, 7) == 1
+        elseif golden_data(j, 1) == 9
             golden_event(11, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         % Arousal_plm
-        elseif golden_data(j, 1) == 10 && golden_data(j, 7) == 1
+        elseif golden_data(j, 1) == 10
             golden_event(12, round(golden_data(j, 2)) : round(golden_data(j, 2) + golden_data(j, 3))) = 1;
         end
     end
