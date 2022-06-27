@@ -143,24 +143,53 @@ for i = hypopnea_all
     end
 
     %% phase 5 hypopnea
-    
+
+    [start, sp, ep] = deal(0); 
+    for j = 1:length(npress)
+        % 下降超過40
+        if (breath_matrix(2, j) >= 40) && (start == 0)
+            start = 1;
+            sp = j;
+        elseif (breath_matrix(2, j) < 40) && (start == 1)
+            start = 0;
+            ep = j - 1;
+            % 長度檢查
+            if (ep - sp) > 10
+                % 範圍內apnea檢查
+                if sum(event_matrix(1, sp:ep)) == 0
+                    event_matrix(2, sp:ep) = 1;
+                end
+            end
+        end
+    end
 
     %% 畫圖
 
     figure(i);
     hold on; grid on;
-    plot(spo2 - 100);
-    spo22020 = golden_event(7, :);
-    npress_bar = bar(spo22020, 'FaceColor', 'b', 'BarWidth', 1);
-    set(npress_bar, 'FaceAlpha', 0.5);
-    sd_bar = bar((event_matrix(3, :)~=0)*-1, 'FaceColor', 'k', 'BarWidth', 1);
-    set(sd_bar, 'FaceAlpha', 0.5);
+    plot(npress);
+    plot(therm);
+    apnea2020 = golden_event(1, :) | golden_event(2, :) | golden_event(3, :);
+    apnea_bar = bar(apnea2020, 'FaceColor', 'r', 'BarWidth', 1);
+    set(apnea_bar, 'FaceAlpha', 0.5);
+    hypopnea2020 = golden_event(4, :) | golden_event(5, :) | golden_event(6, :);
+    hypopnea_bar = bar(hypopnea2020, 'FaceColor', 'b', 'BarWidth', 1);
+    set(hypopnea_bar, 'FaceAlpha', 0.5);
+    spo2_bar = bar(golden_event(7, :)*-0.5, 'FaceColor', 'k', 'BarWidth', 1);
+    set(spo2_bar, 'FaceAlpha', 0.5);
+    arousal2020 = golden_event(9, :) | golden_event(10, :) | golden_event(11, :) | golden_event(12, :);
+    arousal_bar = bar(arousal2020*0.5, 'FaceColor', 'g', 'BarWidth', 1);
+    set(arousal_bar, 'FaceAlpha', 0.5);
+    ad_bar = bar((event_matrix(1, :)~=0)*-1, 'FaceColor', 'r', 'BarWidth', 1);
+    set(ad_bar, 'FaceAlpha', 0.5);
+    hd_bar = bar((event_matrix(2, :)~=0)*-1, 'FaceColor', 'b', 'BarWidth', 1);
+    set(hd_bar, 'FaceAlpha', 0.5);
 
     %% 驗證
 
     % 取出想要驗證的陣列
-    my_ans = event_matrix(3, :) ~= 0;
-    golden = golden_event(7, :);
+    my_ans = event_matrix(2, :) ~= 0;
+    golden = hypopnea2020;
     [tp, fn, fp, cont, es, ee] = deal(0);
     for j = 1:length(golden)
         if (golden(j) == 1) && (cont == 0)
@@ -194,7 +223,7 @@ for i = hypopnea_all
     if ((tp+fn) ~= 0) && ((tp+fp) ~= 0)
         total_recall(end+1) = recall;
         total_precision(end+1) = precision;
-        fprintf("file %d\trecall: %2.2f\tprecision: %2.2f\n", i, round(recall, 2), round(precision, 2));
+        fprintf("file %d   \trecall: %2.2f\tprecision: %2.2f\n", i, round(recall, 2), round(precision, 2));
     end
 end
 
