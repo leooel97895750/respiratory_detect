@@ -3,6 +3,8 @@ close all;
 
 inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2020respiratory_feature\';
 goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
+arousal_dir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022arousal\';
+arousal_feature_dir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
 
 total_recall = [];
 total_precision = [];
@@ -11,9 +13,10 @@ total_precision = [];
 apnea_all = [38,80,10,36,30,112,64,43,51,23,118,91,109,88,49,35,94,29,107,116,12,26,8,92,41,120,70,11,7,14,5,93,46,42,101,24,20,54,68,40];
 hypopnea_all = [62,24,55,32,108,42,100,75,20,33,73,46,54,37,31,67,117,49,22,111,110,89,99,6,50,23,64,15,97,84,87,41,5,26,106,71,82,11,17,94,38,8,77,14,85,83,116,79,119,68,86,118,57,90,101,29,107,80,10,88,30,36,109,51,112,7,91,16,35,120,92,93,70,95,74];
 
-apnea_allx = [38,10,36,30,112,64,43,51,23,118,109,88,49,35,94,29,107,116,12,26,41,120,11,14,5,46,42,101,24,20,54,68,40];
+apnea_allx = [38,10,36,112,64,43,51,23,109,88,49,94,29,107,116,12,26,8,41,120,11,14,5,46,42,24,54,68,40];
+hypopnea_allx = [24,55,33,46,37,31,67,117,49,111,110,6,50,64,15,97,84,5,26,71,82,11,38,8,77,14,85,83,116,79,68,86,57,90,29,107,10,88,36,109,51,112,16,120,95,74];
 
-for i = hypopnea_all
+for i = hypopnea_allx
 
     feature = load(join([inputDir, string(i), '.csv'], ''));
 
@@ -50,6 +53,9 @@ for i = hypopnea_all
         end
     end
     golden_event = golden_event(:, 1:width(feature));
+    apnea2020 = golden_event(1, :) | golden_event(2, :) | golden_event(3, :);
+    hypopnea2020 = golden_event(4, :) | golden_event(5, :) | golden_event(6, :);
+    arousal2020 = golden_event(9, :) | golden_event(10, :) | golden_event(11, :) | golden_event(12, :);
 
     %% phase 1 NPress Therm 全局threshold
 
@@ -77,7 +83,7 @@ for i = hypopnea_all
     window_size = 60;
     for j = window_size:length(therm)
         window = sort(therm(j-window_size+1:j-1));
-        window = window(1:round(length(window)*0.9));
+        window = window(1:round(length(window)*0.95));
         threshold = mean(window(window >= mean(window)));
         t_plot(j) = threshold;
         % 檢查此點j有無小於threshold，有則標記成異常，並寫入下降%數
@@ -88,8 +94,8 @@ for i = hypopnea_all
     % npress
     for j = window_size:length(npress)
         window = sort(npress(j-window_size+1:j-1));
-        window = window(1:round(length(window)*0.9));
-        threshold = mean(window(window >= mean(window)));
+        window = window(1:round(length(window)*0.95));
+        threshold = mean(window(round(length(window)*0.9:length(window))));
         n_plot(j) = threshold;
         % 檢查此點j有無小於threshold，有則標記成異常，並寫入下降%數
         if (npress(j) < threshold) && (npress(j) < npress_threshold)
@@ -103,16 +109,35 @@ for i = hypopnea_all
     event_matrix = zeros(3, length(therm));
     [start, sp, ep] = deal(0); 
     for j = 1:length(therm)
-        % 下降超過80
-        if (breath_matrix(1, j) >= 80) && (start == 0)
+        % 下降超過85
+        if (breath_matrix(1, j) >= 85) && (start == 0)
             start = 1;
             sp = j;
-        elseif (breath_matrix(1, j) < 80) && (start == 1)
+        elseif (breath_matrix(1, j) < 85) && (start == 1)
             start = 0;
             ep = j - 1;
             % 長度檢查
             if (ep - sp) > 10
                 event_matrix(1, sp:ep) = 1;
+            end
+        end
+    end
+    % 開頭都觸底
+    [start, sp, ep] = deal(0); 
+    for j = 1:length(therm)
+        % 下降只超過60
+        if (breath_matrix(1, j) >= 60) && (start == 0)
+            start = 1;
+            sp = j;
+        elseif (breath_matrix(1, j) < 60) && (start == 1)
+            start = 0;
+            ep = j - 1;
+            % 長度檢查 前半段觸底
+            if (ep - sp) > 10
+                len = ep - sp;
+                if (sum(therm(sp:ep) < 0.0002) >= 1) && (sum(npress(sp:ep) < 0.0002) >= 1)
+                    event_matrix(1, sp:ep) = 1;
+                end
             end
         end
     end
@@ -144,46 +169,40 @@ for i = hypopnea_all
 
     %% phase 5 hypopnea
 
+    % 1*秒數 1代表arousal
+    my_arousal = load(join([arousal_dir, string(i), '.csv'], ''));
+    % 63*秒數 1代表頻率變化
+    my_arousal_feature = load(join([arousal_feature_dir, string(i), '.csv'], ''));
     [start, sp, ep] = deal(0); 
-    for j = 1:length(npress)
-        % 下降超過40
-        if (breath_matrix(2, j) >= 40) && (start == 0)
+    for j = 1:length(npress)-5
+        % npress 或 therm 下降超過10
+        if ((breath_matrix(2, j) >= 10) || (breath_matrix(1, j) >= 10)) && (start == 0)
             start = 1;
             sp = j;
-        elseif (breath_matrix(2, j) < 40) && (start == 1)
+        elseif (breath_matrix(2, j) < 10)  && (breath_matrix(1, j) < 10) && (start == 1)
             start = 0;
             ep = j - 1;
             % 長度檢查
             if (ep - sp) > 10
                 % 範圍內apnea檢查
                 if sum(event_matrix(1, sp:ep)) == 0
-                    event_matrix(2, sp:ep) = 1;
+                    % 檢查結束點周圍有無spo2 desat
+                    if sum(event_matrix(3, ep-5:ep+5) >= 3) ~= 0
+                        event_matrix(2, sp:ep) = 1;
+                    end
+                    % 檢查結束點周圍有無arousal
+                    if sum(my_arousal(1, ep-5:ep+5)) ~= 0
+                        event_matrix(2, sp:ep) = 1;
+                    end
+                    % 檢查結束點周圍有頻率變化
+                    if sum(my_arousal_feature(:, ep-5:ep+5)) >= 2
+                        event_matrix(2, sp:ep) = 1;
+                    end
+                    
                 end
             end
         end
     end
-
-    %% 畫圖
-
-    figure(i);
-    hold on; grid on;
-    plot(npress);
-    plot(therm);
-    apnea2020 = golden_event(1, :) | golden_event(2, :) | golden_event(3, :);
-    apnea_bar = bar(apnea2020, 'FaceColor', 'r', 'BarWidth', 1);
-    set(apnea_bar, 'FaceAlpha', 0.5);
-    hypopnea2020 = golden_event(4, :) | golden_event(5, :) | golden_event(6, :);
-    hypopnea_bar = bar(hypopnea2020, 'FaceColor', 'b', 'BarWidth', 1);
-    set(hypopnea_bar, 'FaceAlpha', 0.5);
-    spo2_bar = bar(golden_event(7, :)*-0.5, 'FaceColor', 'k', 'BarWidth', 1);
-    set(spo2_bar, 'FaceAlpha', 0.5);
-    arousal2020 = golden_event(9, :) | golden_event(10, :) | golden_event(11, :) | golden_event(12, :);
-    arousal_bar = bar(arousal2020*0.5, 'FaceColor', 'g', 'BarWidth', 1);
-    set(arousal_bar, 'FaceAlpha', 0.5);
-    ad_bar = bar((event_matrix(1, :)~=0)*-1, 'FaceColor', 'r', 'BarWidth', 1);
-    set(ad_bar, 'FaceAlpha', 0.5);
-    hd_bar = bar((event_matrix(2, :)~=0)*-1, 'FaceColor', 'b', 'BarWidth', 1);
-    set(hd_bar, 'FaceAlpha', 0.5);
 
     %% 驗證
 
@@ -225,6 +244,27 @@ for i = hypopnea_all
         total_precision(end+1) = precision;
         fprintf("file %d   \trecall: %2.2f\tprecision: %2.2f\n", i, round(recall, 2), round(precision, 2));
     end
+
+    %% 畫圖
+
+    figure(i);
+    hold on; grid on;
+    plot(npress);
+    plot(therm);
+    plot((spo2-100)*0.1);
+    apnea_bar = bar(apnea2020, 'FaceColor', 'r', 'BarWidth', 1);
+    set(apnea_bar, 'FaceAlpha', 0.5);
+    hypopnea_bar = bar(hypopnea2020, 'FaceColor', 'b', 'BarWidth', 1);
+    set(hypopnea_bar, 'FaceAlpha', 0.5);
+    spo2_bar = bar(golden_event(7, :)*-0.5, 'FaceColor', 'k', 'BarWidth', 1);
+    set(spo2_bar, 'FaceAlpha', 0.5);
+    arousal_bar = bar(arousal2020*0.5, 'FaceColor', 'g', 'BarWidth', 1);
+    set(arousal_bar, 'FaceAlpha', 0.5);
+    ad_bar = bar((event_matrix(1, :)~=0)*-1, 'FaceColor', 'r', 'BarWidth', 1);
+    set(ad_bar, 'FaceAlpha', 0.5);
+    hd_bar = bar((event_matrix(2, :)~=0)*-1, 'FaceColor', 'b', 'BarWidth', 1);
+    set(hd_bar, 'FaceAlpha', 0.5);
+    title("r: " + recall + " p: " + precision);
 end
 
 disp("total recall: " + string(mean(total_recall)) + " total precision: " + string(mean(total_precision)));
