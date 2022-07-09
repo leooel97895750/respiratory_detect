@@ -5,9 +5,16 @@ inputDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_d
 goldenDir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022event\';
 arousal_dir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022arousal\';
 arousal_feature_dir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\respiratory_detect\2022arousal_feature_t4\';
+stage_dir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022stage\';
+output_dir = 'G:\共用雲端硬碟\Sleep center data\auto_detection\sleep_scoring_AI\2022_Sleep_Scoring_AI\2022respiratory_result\';
 
 total_recall = [];
 total_precision = [];
+total_AHI = [];
+total_ODI = [];
+total_tp = 0;
+total_fn = 0;
+total_fp = 0;
 
 % AASM2020新規則
 apnea_all = [38,80,10,36,30,112,64,43,51,23,118,91,109,88,49,35,94,29,107,116,12,26,8,92,41,120,70,11,7,14,5,93,46,42,101,24,20,54,68,40];
@@ -16,7 +23,17 @@ hypopnea_all = [62,24,55,32,108,42,100,75,20,33,73,46,54,37,31,67,117,49,22,111,
 apnea_allx = [38,10,36,112,64,43,51,23,109,88,49,94,29,107,116,12,26,8,41,120,11,14,5,46,42,24,54,68,40];
 hypopnea_allx = [24,55,33,46,37,31,67,117,49,111,110,6,50,64,15,97,84,5,26,71,82,11,38,8,77,14,85,83,116,79,68,86,57,90,29,107,10,88,36,109,51,112,16,120,95,74];
 
-for i = hypopnea_allx
+yAHI_all = [60,96,53,76,48,25,66,18,19,114,45,58,104,63,61,115,72,...
+            21,13,59,98,56,100,55,73,31,22,99,110,111,87,50,106,...
+            84,82,23,64,77,83,119,57,26,90,118,8,116,36,88,51,112,...
+            46,42,14,24,120,7,54,40,101,68];
+
+xAHI_all = [39,102,52,47,105,103,2,9,4,3,28,34,69,65,27,78,81,...
+            44,113,1,62,108,32,75,33,37,67,117,6,43,89,15,97,71,...
+            17,12,85,49,38,79,86,94,41,11,80,10,30,29,107,109,...
+            16,5,91,35,20,95,92,70,74,93];
+
+for i = 1:120
 
     feature = load(join([inputDir, string(i), '.csv'], ''));
 
@@ -122,7 +139,7 @@ for i = hypopnea_allx
             end
         end
     end
-    % 開頭都觸底
+    % 觸底檢查
     [start, sp, ep] = deal(0); 
     for j = 1:length(therm)
         % 下降只超過60
@@ -132,7 +149,7 @@ for i = hypopnea_allx
         elseif (breath_matrix(1, j) < 60) && (start == 1)
             start = 0;
             ep = j - 1;
-            % 長度檢查 前半段觸底
+            % 長度檢查
             if (ep - sp) > 10
                 len = ep - sp;
                 if (sum(therm(sp:ep) < 0.0002) >= 1) && (sum(npress(sp:ep) < 0.0002) >= 1)
@@ -204,7 +221,7 @@ for i = hypopnea_allx
         end
     end
 
-    %% 驗證
+    %% 驗證 分兩種，若是各別的recall、precision無法計算無事件個案，因此把tp fn fp全部加總再計算
 
     % 取出想要驗證的陣列
     my_ans = event_matrix(2, :) ~= 0;
@@ -236,35 +253,84 @@ for i = hypopnea_allx
             end
         end
     end
+    total_tp = total_tp + tp;
+    total_fn = total_fn + fn;
+    total_fp = total_fp + fp;
+    fprintf("file %d   \ttp: %d\tfn: %d\tfp: %d\n", i, tp, fn, fp);
     recall = tp/(tp+fn);
     precision = tp/(tp+fp);
     % 無事件則不納入統計
     if ((tp+fn) ~= 0) && ((tp+fp) ~= 0)
         total_recall(end+1) = recall;
         total_precision(end+1) = precision;
-        fprintf("file %d   \trecall: %2.2f\tprecision: %2.2f\n", i, round(recall, 2), round(precision, 2));
+        %fprintf("file %d   \trecall: %2.2f\tprecision: %2.2f\n", i, round(recall, 2), round(precision, 2));
     end
 
     %% 畫圖
 
-    figure(i);
-    hold on; grid on;
-    plot(npress);
-    plot(therm);
-    plot((spo2-100)*0.1);
-    apnea_bar = bar(apnea2020, 'FaceColor', 'r', 'BarWidth', 1);
-    set(apnea_bar, 'FaceAlpha', 0.5);
-    hypopnea_bar = bar(hypopnea2020, 'FaceColor', 'b', 'BarWidth', 1);
-    set(hypopnea_bar, 'FaceAlpha', 0.5);
-    spo2_bar = bar(golden_event(7, :)*-0.5, 'FaceColor', 'k', 'BarWidth', 1);
-    set(spo2_bar, 'FaceAlpha', 0.5);
-    arousal_bar = bar(arousal2020*0.5, 'FaceColor', 'g', 'BarWidth', 1);
-    set(arousal_bar, 'FaceAlpha', 0.5);
-    ad_bar = bar((event_matrix(1, :)~=0)*-1, 'FaceColor', 'r', 'BarWidth', 1);
-    set(ad_bar, 'FaceAlpha', 0.5);
-    hd_bar = bar((event_matrix(2, :)~=0)*-1, 'FaceColor', 'b', 'BarWidth', 1);
-    set(hd_bar, 'FaceAlpha', 0.5);
-    title("r: " + recall + " p: " + precision);
-end
+%     figure(i);
+%     hold on; grid on;
+%     plot(npress);
+%     plot(therm);
+%     plot((spo2-100)*0.1);
+%     apnea_bar = bar(apnea2020, 'FaceColor', 'r', 'BarWidth', 1);
+%     set(apnea_bar, 'FaceAlpha', 0.5);
+%     hypopnea_bar = bar(hypopnea2020, 'FaceColor', 'b', 'BarWidth', 1);
+%     set(hypopnea_bar, 'FaceAlpha', 0.5);
+%     spo2_bar = bar(golden_event(7, :)*-0.5, 'FaceColor', 'k', 'BarWidth', 1);
+%     set(spo2_bar, 'FaceAlpha', 0.5);
+%     arousal_bar = bar(arousal2020*0.5, 'FaceColor', 'g', 'BarWidth', 1);
+%     set(arousal_bar, 'FaceAlpha', 0.5);
+%     ad_bar = bar((event_matrix(1, :)~=0)*-1, 'FaceColor', 'r', 'BarWidth', 1);
+%     set(ad_bar, 'FaceAlpha', 0.5);
+%     hd_bar = bar((event_matrix(2, :)~=0)*-1, 'FaceColor', 'b', 'BarWidth', 1);
+%     set(hd_bar, 'FaceAlpha', 0.5);
+%     title("r: " + recall + " p: " + precision);
 
-disp("total recall: " + string(mean(total_recall)) + " total precision: " + string(mean(total_precision)));
+    %% 計算AHI
+    apnea_hypopnea_count = 0;
+    for k = 1:2
+        [start, sp, ep] = deal(0); 
+        for j = 1:length(event_matrix)
+            if (event_matrix(k, j) == 1) && (start == 0)
+                start = 1;
+                sp = j;
+            elseif (event_matrix(k, j) == 0) && (start == 1)
+                start = 0;
+                ep = j - 1;
+                apnea_hypopnea_count = apnea_hypopnea_count + 1;
+            end
+        end
+    end
+    stage = load(join([stage_dir, string(i), '.dat'], ''));
+    tst = 0;
+    for j = 1:length(stage)
+        if stage(j) ~= 0
+            tst = tst + 1;
+        end
+    end
+    tst = tst / 120;
+    total_AHI(end+1) = round((apnea_hypopnea_count / tst), 2);
+    fprintf("file %d   \tAHI: %2.2f\n", i, round((apnea_hypopnea_count / tst), 2));
+
+    %% 儲存
+    csvwrite(join([output_dir, string(i), '.csv'], ''), event_matrix);
+
+    %% 計算ODI
+%     od_count = 0;
+%     [start, sp, ep] = deal(0); 
+%     for j = 1:length(event_matrix)
+%         if (event_matrix(3, j) ~= 0) && (start == 0)
+%             start = 1;
+%             sp = j;
+%         elseif (event_matrix(3, j) == 0) && (start == 1)
+%             start = 0;
+%             ep = j - 1;
+%             od_count = od_count + 1;
+%         end
+%     end
+%     total_ODI(end+1) = round((od_count / tst), 2);
+
+end
+disp("total recall: " + tp/(tp+fn) + " total precision: " + tp/(tp+fp));
+%disp("total recall: " + string(mean(total_recall)) + " total precision: " + string(mean(total_precision)));
